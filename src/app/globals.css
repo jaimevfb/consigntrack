@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * ConsignTrack palette — restrained neutral paper + a single deep ledger-green
+ * accent, expressed in oklch. Status hues (ok/warn) are muted and always
+ * paired with a text label in the UI, never colour alone. Light is default.
+ */
+:root {
+  --background: oklch(0.992 0.003 95);
+  --foreground: oklch(0.245 0.012 90);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.245 0.012 90);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.245 0.012 90);
+
+  /* deep ledger green */
+  --primary: oklch(0.415 0.082 155);
+  --primary-foreground: oklch(0.985 0.01 155);
+
+  --secondary: oklch(0.955 0.004 95);
+  --secondary-foreground: oklch(0.3 0.012 90);
+
+  --muted: oklch(0.962 0.004 95);
+  --muted-foreground: oklch(0.505 0.01 90);
+
+  --accent: oklch(0.945 0.022 155);
+  --accent-foreground: oklch(0.34 0.07 155);
+
+  --destructive: oklch(0.505 0.15 25);
+  --destructive-foreground: oklch(0.985 0.01 25);
+
+  /* on-track / settled */
+  --ok: oklch(0.93 0.05 150);
+  --ok-foreground: oklch(0.37 0.09 150);
+  /* due / overdue (ochre, not red) */
+  --warn: oklch(0.92 0.07 75);
+  --warn-foreground: oklch(0.42 0.09 65);
+
+  --border: oklch(0.9 0.005 95);
+  --input: oklch(0.9 0.005 95);
+  --ring: oklch(0.415 0.082 155);
+
+  --radius: 0.375rem;
+}
+
+.dark {
+  --background: oklch(0.19 0.008 120);
+  --foreground: oklch(0.93 0.006 95);
+
+  --card: oklch(0.225 0.009 120);
+  --card-foreground: oklch(0.93 0.006 95);
+
+  --popover: oklch(0.225 0.009 120);
+  --popover-foreground: oklch(0.93 0.006 95);
+
+  --primary: oklch(0.72 0.11 155);
+  --primary-foreground: oklch(0.18 0.02 155);
+
+  --secondary: oklch(0.27 0.01 120);
+  --secondary-foreground: oklch(0.9 0.006 95);
+
+  --muted: oklch(0.27 0.01 120);
+  --muted-foreground: oklch(0.68 0.01 95);
+
+  --accent: oklch(0.32 0.04 155);
+  --accent-foreground: oklch(0.9 0.03 155);
+
+  --destructive: oklch(0.62 0.16 25);
+  --destructive-foreground: oklch(0.98 0.01 25);
+
+  --ok: oklch(0.34 0.06 150);
+  --ok-foreground: oklch(0.86 0.09 150);
+  --warn: oklch(0.36 0.07 75);
+  --warn-foreground: oklch(0.88 0.1 80);
+
+  --border: oklch(0.32 0.01 120);
+  --input: oklch(0.32 0.01 120);
+  --ring: oklch(0.72 0.11 155);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-feature-settings: "ss01", "cv01";
+  }
+  h1, h2, h3, h4 {
+    font-family: theme("fontFamily.serif");
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  /* Tabular figures for all ledger numbers. */
+  .tnum {
+    font-family: theme("fontFamily.mono");
+    font-variant-numeric: tabular-nums;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
