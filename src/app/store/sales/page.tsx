@@ -1,6 +1,9 @@
+import Link from "next/link";
+import { Upload } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SaleEntry, type SellableItem } from "@/components/sale-entry";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateTime, formatPHP } from "@/lib/utils";
@@ -50,9 +53,16 @@ export default async function StoreSalesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl">Record a sale</h1>
-        <p className="text-sm text-muted-foreground">Tap items to build the sale, then record it.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl">Record a sale</h1>
+          <p className="text-sm text-muted-foreground">Tap items to build the sale, then record it.</p>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/store/sales/import">
+            <Upload className="h-4 w-4" /> Import CSV / POS
+          </Link>
+        </Button>
       </div>
 
       <SaleEntry storeId={profile.store_id} items={items} />

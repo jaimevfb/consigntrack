@@ -316,6 +316,227 @@ export async function getStoreReport(storeId: string): Promise<{
   return { byProduct: sort(byProduct), byConsignor: sort(byConsignor) };
 }
 
+// ---------------------------------------------------------------------------
+// Analytics — daily series + mixes, per lens (RLS-scoped)
+// ---------------------------------------------------------------------------
+export interface DayPoint {
+  label: string;
+  value: number;
+}
+
+function lastNDates(n: number): { key: string; label: string }[] {
+  const out: { key: string; label: string }[] = [];
+  const now = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    out.push({
+      key: d.toISOString().slice(0, 10),
+      label: `${d.getMonth() + 1}/${d.getDate()}`,
+    });
+  }
+  return out;
+}
+
+export interface AnalyticsBundle {
+  tiles: { gross30: number; units30: number; orders30: number; avgOrder: number };
+  series: DayPoint[]; // last 14 days gross
+  topProducts: PerfRow[];
+  breakdown: PerfRow[]; // by store (consignor) or by consignor (store)
+  mix: { label: string; value: number }[]; // gross split for donut
+  windowLabel: string;
+}
+
+type WindowItem = {
+  qty: number;
+  unit_price: number;
+  product_id: string;
+  consignor_id?: string;
+  products: { name: string } | null;
+  sales: { store_id: string; sold_at: string; id?: string } | null;
+};
+
+function buildSeries(items: WindowItem[]): DayPoint[] {
+  const days = lastNDates(14);
+  const byDay = new Map(days.map((d) => [d.key, 0]));
+  for (const it of items) {
+    const key = it.sales?.sold_at?.slice(0, 10);
+    if (key && byDay.has(key)) byDay.set(key, (byDay.get(key) ?? 0) + it.qty * it.unit_price);
+  }
+  return days.map((d) => ({ label: d.label, value: Math.round(byDay.get(d.key) ?? 0) }));
+}
+
+function tilesFrom(items: WindowItem[]) {
+  const gross30 = items.reduce((a, r) => a + r.qty * r.unit_price, 0);
+  const units30 = items.reduce((a, r) => a + r.qty, 0);
+  const orders = new Set(items.map((r) => r.sales?.id ?? r.sales?.sold_at)).size;
+  return {
+    gross30: Math.round(gross30),
+    units30,
+    orders30: orders,
+    avgOrder: orders ? Math.round(gross30 / orders) : 0,
+  };
+}
+
+export async function getConsignorAnalytics(consignorId: string): Promise<AnalyticsBundle> {
+  const supabase = createClient();
+  const since = new Date();
+  since.setDate(since.getDate() - 30);
+  const [{ data: win }, report, { data: stores }] = await Promise.all([
+    supabase
+      .from("sale_items")
+      .select("qty, unit_price, product_id, products(name), sales!inner(id, store_id, sold_at)")
+      .eq("consignor_id", consignorId)
+      .gte("sales.sold_at", since.toISOString()),
+    getConsignorReport(consignorId),
+    supabase.from("stores").select("id, name"),
+  ]);
+  const items = (win ?? []) as unknown as WindowItem[];
+  const storeName = Object.fromEntries(((stores ?? []) as Store[]).map((s) => [s.id, s.name]));
+  const mix = report.byStore.slice(0, 5).map((s) => ({ label: storeName[s.id] ?? s.name, value: Math.round(s.gross) }));
+  return {
+    tiles: tilesFrom(items),
+    series: buildSeries(items),
+    topProducts: report.byProduct.slice(0, 6),
+    breakdown: report.byStore,
+    mix,
+    windowLabel: "Last 30 days",
+  };
+}
+
+export async function getStoreAnalytics(storeId: string): Promise<AnalyticsBundle> {
+  const supabase = createClient();
+  const since = new Date();
+  since.setDate(since.getDate() - 30);
+  const [{ data: win }, report] = await Promise.all([
+    supabase
+      .from("sale_items")
+      .select("qty, unit_price, product_id, consignor_id, products(name), sales!inner(id, store_id, sold_at)")
+      .eq("sales.store_id", storeId)
+      .gte("sales.sold_at", since.toISOString()),
+    getStoreReport(storeId),
+  ]);
+  const items = (win ?? []) as unknown as WindowItem[];
+  const mix = report.byConsignor.slice(0, 5).map((c) => ({ label: c.name, value: Math.round(c.gross) }));
+  return {
+    tiles: tilesFrom(items),
+    series: buildSeries(items),
+    topProducts: report.byProduct.slice(0, 6),
+    breakdown: report.byConsignor,
+    mix,
+    windowLabel: "Last 30 days",
+  };
+}
+
+export interface AdminAnalytics {
+  series: DayPoint[];
+  gmv30: number;
+  units30: number;
+  movements: number;
+}
+
+/** System-wide analytics for admin (sees all rows via RLS is_admin). */
+export async function getAdminAnalytics(): Promise<AdminAnalytics> {
+  const supabase = createClient();
+  const since = new Date();
+  since.setDate(since.getDate() - 30);
+  const [{ data: win }, { count: movements }] = await Promise.all([
+    supabase
+      .from("sale_items")
+      .select("qty, unit_price, product_id, sales!inner(id, store_id, sold_at)")
+      .gte("sales.sold_at", since.toISOString()),
+    supabase.from("stock_movements").select("*", { count: "exact", head: true }),
+  ]);
+  const items = (win ?? []) as unknown as WindowItem[];
+  return {
+    series: buildSeries(items),
+    gmv30: Math.round(items.reduce((a, r) => a + r.qty * r.unit_price, 0)),
+    units30: items.reduce((a, r) => a + r.qty, 0),
+    movements: movements ?? 0,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Alerts (paper SOP#5) — aged stock, low stock, discrepancies, overdue pay
+// ---------------------------------------------------------------------------
+export interface AlertItem {
+  kind: "aged" | "low" | "shrinkage" | "overdue";
+  title: string;
+  detail: string;
+  when?: string;
+}
+
+export interface AlertsBundle {
+  counts: { aged: number; low: number; discrepancies: number; overdue: number };
+  items: AlertItem[];
+}
+
+async function nameMaps() {
+  const supabase = createClient();
+  const [{ data: p }, { data: s }, { data: c }] = await Promise.all([
+    supabase.from("products").select("id, name"),
+    supabase.from("stores").select("id, name"),
+    supabase.from("consignors").select("id, name"),
+  ]);
+  return {
+    product: Object.fromEntries(((p ?? []) as { id: string; name: string }[]).map((x) => [x.id, x.name])),
+    store: Object.fromEntries(((s ?? []) as { id: string; name: string }[]).map((x) => [x.id, x.name])),
+    consignor: Object.fromEntries(((c ?? []) as { id: string; name: string }[]).map((x) => [x.id, x.name])),
+  };
+}
+
+export async function getAlerts(): Promise<AlertsBundle> {
+  const supabase = createClient();
+  const names = await nameMaps();
+  const [{ data: aged }, { data: low }, disc, { data: setts }] = await Promise.all([
+    supabase.rpc("find_aged_stock", { p_days: 30 }),
+    supabase.rpc("find_low_stock", { p_threshold: 5 }),
+    getDiscrepancies(),
+    supabase.from("settlements").select("id, period_end, status, net_payable, agreements!inner(store_id, consignor_id)"),
+  ]);
+
+  const agedRows = (aged ?? []) as Array<{ store_id: string; product_id: string; qty_on_hand: number; days_idle: number | null }>;
+  const lowRows = (low ?? []) as Array<{ store_id: string; product_id: string; qty_on_hand: number }>;
+  const overdue = ((setts ?? []) as unknown as Array<{ period_end: string; status: string; net_payable: number; agreements: { store_id: string; consignor_id: string } }>).filter(
+    (s) => isSettlementOverdue(s.period_end, s.status),
+  );
+
+  const items: AlertItem[] = [];
+  for (const a of agedRows.slice(0, 8)) {
+    items.push({
+      kind: "aged",
+      title: `${names.product[a.product_id] ?? "Product"} · ${names.store[a.store_id] ?? "Store"}`,
+      detail: `${a.qty_on_hand} on hand, no sale in ${a.days_idle ?? "30+"} days`,
+    });
+  }
+  for (const l of lowRows.slice(0, 8)) {
+    items.push({
+      kind: "low",
+      title: `${names.product[l.product_id] ?? "Product"} · ${names.store[l.store_id] ?? "Store"}`,
+      detail: `Only ${l.qty_on_hand} left on hand`,
+    });
+  }
+  for (const d of disc.slice(0, 8)) {
+    items.push({
+      kind: "shrinkage",
+      title: `${names.product[d.product_id] ?? "Product"} · ${names.store[d.store_id] ?? "Store"}`,
+      detail: d.detail,
+      when: d.occurred_at,
+    });
+  }
+  for (const o of overdue.slice(0, 8)) {
+    items.push({
+      kind: "overdue",
+      title: `${names.consignor[o.agreements.consignor_id] ?? "Consignor"} · ${names.store[o.agreements.store_id] ?? "Store"}`,
+      detail: `Overdue settlement of ₱${Number(o.net_payable).toLocaleString()} (due ${o.period_end})`,
+    });
+  }
+
+  return {
+    counts: { aged: agedRows.length, low: lowRows.length, discrepancies: disc.length, overdue: overdue.length },
+    items,
+  };
+}
+
 /** Minimal CSV serialiser (quotes fields, escapes quotes). */
 export function toCSV(headers: string[], rows: (string | number)[][]): string {
   const esc = (v: string | number) => {

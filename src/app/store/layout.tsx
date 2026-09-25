@@ -16,21 +16,24 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     if (data?.name) scopeLabel = data.name;
   }
 
+  const isManager = profile.role === "store_manager" || profile.role === "admin";
+  const nav = [
+    { href: "/store", label: "Dashboard" },
+    ...(isManager ? [{ href: "/store/analytics", label: "Analytics" }] : []),
+    { href: "/store/sales", label: "Sell" },
+    { href: "/store/deliveries", label: "Deliveries" },
+    { href: "/store/inventory", label: "Inventory" },
+    { href: "/store/returns", label: "Returns" },
+    ...(isManager
+      ? [
+          { href: "/store/settlements", label: "Settlements" },
+          { href: "/store/reports", label: "Reports" },
+        ]
+      : []),
+  ];
+
   return (
-    <AppShell
-      role={profile.role}
-      userName={profile.full_name}
-      scopeLabel={scopeLabel}
-      nav={[
-        { href: "/store", label: "Dashboard" },
-        { href: "/store/sales", label: "Sell" },
-        { href: "/store/deliveries", label: "Deliveries" },
-        { href: "/store/inventory", label: "Inventory" },
-        { href: "/store/returns", label: "Returns" },
-        { href: "/store/settlements", label: "Settlements" },
-        { href: "/store/reports", label: "Reports" },
-      ]}
-    >
+    <AppShell role={profile.role} userName={profile.full_name} scopeLabel={scopeLabel} nav={nav}>
       {children}
     </AppShell>
   );

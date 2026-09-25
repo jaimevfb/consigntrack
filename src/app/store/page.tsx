@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Users, Package, Coins, FileClock, ArrowUpRight } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
-import { getStoreDashboard } from "@/lib/data";
-import { StatTile, PerfBar } from "@/components/stat-tile";
+import { getStoreDashboard, getStoreAnalytics, getAlerts } from "@/lib/data";
 import { AnomalyFeed } from "@/components/anomaly-feed";
-import { StatusPill } from "@/components/status-pill";
+import { AlertsPanel } from "@/components/alerts-panel";
+import { AreaTrend, Donut, RankedBars } from "@/components/charts";
+import { KpiTile } from "@/components/kpi-tile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPHP, formatNumber } from "@/lib/utils";
 
 export default async function StoreDashboardPage() {
@@ -15,33 +15,53 @@ export default async function StoreDashboardPage() {
   if (!profile.store_id) {
     return (
       <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-        This account has no store scope. Sign in as a store user to view this dashboard.
+        This account has no store scope.
       </div>
     );
   }
+  const isManager = profile.role === "store_manager" || profile.role === "admin";
 
-  const dash = await getStoreDashboard(profile.store_id);
-  const maxOnHand = Math.max(1, ...dash.consignors.map((c) => c.onHand));
+  const [dash, analytics, alerts] = await Promise.all([
+    getStoreDashboard(profile.store_id),
+    getStoreAnalytics(profile.store_id),
+    getAlerts(),
+  ]);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Every consignor you carry, in one ledger.</p>
         </div>
-        <Button asChild>
-          <Link href="/store/sales">
-            <ShoppingCart className="h-4 w-4" /> Record a sale
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          {isManager ? (
+            <Button asChild variant="outline" size="sm">
+              <Link href="/store/analytics">
+                Analytics <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          ) : null}
+          <Button asChild size="sm">
+            <Link href="/store/sales">
+              <ShoppingCart className="h-4 w-4" /> Record a sale
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Consignors" value={formatNumber(dash.tiles.consignors)} hint="Active agreements" />
-        <StatTile label="Items on hand" value={formatNumber(dash.tiles.onHand)} hint="All consignors" />
-        <StatTile label="Units sold today" value={formatNumber(dash.tiles.salesToday)} tone="ok" />
-        <StatTile
+        <KpiTile icon={Users} label="Consignors" value={formatNumber(dash.tiles.consignors)} hint="Active agreements" />
+        <KpiTile icon={Package} label="Items on hand" value={formatNumber(dash.tiles.onHand)} hint="All consignors" />
+        <KpiTile
+          icon={Coins}
+          label="Sold (30 days)"
+          value={formatPHP(analytics.tiles.gross30)}
+          hint={`${analytics.tiles.units30} units`}
+          spark={analytics.series.map((s) => s.value)}
+        />
+        <KpiTile
+          icon={FileClock}
           label="Settlements due"
           value={formatNumber(dash.tiles.settlementsDue)}
           tone={dash.tiles.settlementsDue > 0 ? "warn" : "default"}
@@ -51,50 +71,51 @@ export default async function StoreDashboardPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">By consignor</CardTitle>
+            <CardTitle className="text-base">Sales trend</CardTitle>
+            <p className="text-xs text-muted-foreground">Gross sales, last 14 days</p>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Consignor</TableHead>
-                  <TableHead className="w-40">On hand</TableHead>
-                  <TableHead className="text-right">Sold (period)</TableHead>
-                  <TableHead className="text-right">Owed</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dash.consignors.map((c) => (
-                  <TableRow key={c.consignorId}>
-                    <TableCell className="font-medium">{c.consignorName}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <PerfBar value={c.onHand} max={maxOnHand} />
-                        <span className="tnum w-8 text-right text-xs">{c.onHand}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="tnum text-right">{formatNumber(c.soldThisPeriod)}</TableCell>
-                    <TableCell className="tnum text-right">{formatPHP(c.owed)}</TableCell>
-                    <TableCell>
-                      <StatusPill tone={c.status === "overdue" ? "warn" : "ok"}>
-                        {c.status === "overdue" ? "Overdue" : "On track"}
-                      </StatusPill>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {dash.consignors.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                      No consignors yet.
-                    </TableCell>
-                  </TableRow>
-                ) : null}
-              </TableBody>
-            </Table>
+            <AreaTrend points={analytics.series} valueLabel={formatPHP} />
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Sales by consignor</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {analytics.mix.some((m) => m.value > 0) ? (
+              <Donut segments={analytics.mix.map((m) => ({ label: `${m.label} · ${formatPHP(m.value)}`, value: m.value }))} centerLabel="carried" centerValue={String(dash.tiles.consignors)} />
+            ) : (
+              <p className="py-8 text-center text-sm text-muted-foreground">No sales yet.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Top products</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RankedBars rows={analytics.topProducts.map((p) => ({ label: p.name, value: p.gross, sub: `${p.qtySold} sold` }))} valueFormat={formatPHP} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">On hand by consignor</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RankedBars
+              rows={dash.consignors.map((c) => ({ label: c.consignorName, value: c.onHand, sub: `${formatPHP(c.owed)} owed` }))}
+              valueFormat={formatNumber}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AlertsPanel alerts={alerts} />
         <AnomalyFeed discrepancies={dash.discrepancies} />
       </div>
     </div>

@@ -27,6 +27,7 @@ export default async function ConsignorLayout({ children }: { children: React.Re
       scopeLabel={scopeLabel}
       nav={[
         { href: "/consignor", label: "Dashboard" },
+        { href: "/consignor/analytics", label: "Analytics" },
         { href: "/consignor/deliveries", label: "Deliveries" },
         { href: "/consignor/settlements", label: "Settlements" },
         { href: "/consignor/reports", label: "Reports" },

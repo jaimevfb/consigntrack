@@ -1,8 +1,14 @@
+import Link from "next/link";
+import { Package, Coins, Wallet, AlertCircle, ArrowUpRight } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
-import { getConsignorDashboard } from "@/lib/data";
-import { StatTile, PerfBar } from "@/components/stat-tile";
+import { createClient } from "@/lib/supabase/server";
+import { getConsignorDashboard, getConsignorAnalytics, getAlerts } from "@/lib/data";
 import { AnomalyFeed } from "@/components/anomaly-feed";
+import { AlertsPanel } from "@/components/alerts-panel";
+import { AreaTrend, Donut, RankedBars } from "@/components/charts";
+import { KpiTile } from "@/components/kpi-tile";
 import { StatusPill } from "@/components/status-pill";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPHP, formatNumber } from "@/lib/utils";
@@ -12,35 +18,113 @@ export default async function ConsignorDashboardPage() {
   if (!profile.consignor_id) {
     return (
       <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-        This account has no consignor scope. Sign in as a consignor to view this dashboard.
+        This account has no consignor scope.
       </div>
     );
   }
 
-  const dash = await getConsignorDashboard(profile.consignor_id);
-  const maxSold = Math.max(1, ...dash.stores.map((s) => s.soldThisPeriod));
+  const supabase = createClient();
+  const [dash, analytics, alerts, { data: settRows }] = await Promise.all([
+    getConsignorDashboard(profile.consignor_id),
+    getConsignorAnalytics(profile.consignor_id),
+    getAlerts(),
+    supabase.from("settlements").select("gross_sales, commission, returns_total, net_payable"),
+  ]);
+
+  const setts = (settRows ?? []) as Array<{ gross_sales: number; commission: number; returns_total: number; net_payable: number }>;
+  const econ = setts.reduce(
+    (a, s) => ({
+      gross: a.gross + Number(s.gross_sales),
+      commission: a.commission + Number(s.commission),
+      returns: a.returns + Number(s.returns_total),
+      net: a.net + Number(s.net_payable),
+    }),
+    { gross: 0, commission: 0, returns: 0, net: 0 },
+  );
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Your consignments across all stores, this month.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Your consignments across all stores.</p>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/consignor/analytics">
+            View analytics <ArrowUpRight className="h-4 w-4" />
+          </Link>
+        </Button>
       </div>
 
+      {/* KPI row */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Items on hand" value={formatNumber(dash.tiles.onHand)} hint="Across all stores" />
-        <StatTile label="Sold this period" value={formatPHP(dash.tiles.soldValue)} hint="Gross value" />
-        <StatTile label="Net owed" value={formatPHP(dash.tiles.netOwed)} tone="ok" hint="Unconfirmed settlements" />
-        <StatTile
-          label="Overdue remittance"
+        <KpiTile icon={Package} label="Items on hand" value={formatNumber(dash.tiles.onHand)} hint="All stores" />
+        <KpiTile
+          icon={Coins}
+          label="Sold (30 days)"
+          value={formatPHP(analytics.tiles.gross30)}
+          hint={`${analytics.tiles.units30} units`}
+          spark={analytics.series.map((s) => s.value)}
+        />
+        <KpiTile icon={Wallet} label="Net owed" value={formatPHP(dash.tiles.netOwed)} hint="Unconfirmed" tone="ok" />
+        <KpiTile
+          icon={AlertCircle}
+          label="Overdue"
           value={formatNumber(dash.tiles.overdue)}
-          tone={dash.tiles.overdue > 0 ? "warn" : "default"}
           hint="Settlements past due"
+          tone={dash.tiles.overdue > 0 ? "warn" : "default"}
         />
       </div>
 
+      {/* Trend + economics */}
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Sales trend</CardTitle>
+            <p className="text-xs text-muted-foreground">Gross sales, last 14 days</p>
+          </CardHeader>
+          <CardContent>
+            <AreaTrend points={analytics.series} valueLabel={(n) => formatPHP(n)} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Settlement economics</CardTitle>
+            <p className="text-xs text-muted-foreground">All statements to date</p>
+          </CardHeader>
+          <CardContent>
+            {econ.gross > 0 ? (
+              <Donut
+                centerLabel="gross"
+                centerValue={formatPHP(econ.gross).replace("₱", "₱")}
+                segments={[
+                  { label: `Net payable · ${formatPHP(econ.net)}`, value: econ.net },
+                  { label: `Commission · ${formatPHP(econ.commission)}`, value: econ.commission },
+                  { label: `Returns · ${formatPHP(econ.returns)}`, value: econ.returns },
+                ]}
+              />
+            ) : (
+              <p className="py-8 text-center text-sm text-muted-foreground">No settlements generated yet.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Top products + per-store */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Top products</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RankedBars
+              rows={analytics.topProducts.map((p) => ({ label: p.name, value: p.gross, sub: `${p.qtySold} sold` }))}
+              valueFormat={formatPHP}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardHeader>
             <CardTitle className="text-base">Per-store performance</CardTitle>
           </CardHeader>
@@ -50,7 +134,6 @@ export default async function ConsignorDashboardPage() {
                 <TableRow>
                   <TableHead>Store</TableHead>
                   <TableHead className="text-right">On hand</TableHead>
-                  <TableHead className="w-40">Sold (period)</TableHead>
                   <TableHead className="text-right">Owed</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -60,12 +143,6 @@ export default async function ConsignorDashboardPage() {
                   <TableRow key={s.storeId}>
                     <TableCell className="font-medium">{s.storeName}</TableCell>
                     <TableCell className="tnum text-right">{formatNumber(s.onHand)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <PerfBar value={s.soldThisPeriod} max={maxSold} />
-                        <span className="tnum w-8 text-right text-xs">{s.soldThisPeriod}</span>
-                      </div>
-                    </TableCell>
                     <TableCell className="tnum text-right">{formatPHP(s.owed)}</TableCell>
                     <TableCell>
                       <StatusPill tone={s.status === "overdue" ? "warn" : "ok"}>
@@ -76,7 +153,7 @@ export default async function ConsignorDashboardPage() {
                 ))}
                 {dash.stores.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
                       No active store agreements yet.
                     </TableCell>
                   </TableRow>
@@ -85,12 +162,12 @@ export default async function ConsignorDashboardPage() {
             </Table>
           </CardContent>
         </Card>
+      </div>
 
-        <AnomalyFeed
-          discrepancies={dash.discrepancies}
-          productNames={dash.productNames}
-          storeNames={dash.storeNames}
-        />
+      {/* Alerts + anomaly */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AlertsPanel alerts={alerts} />
+        <AnomalyFeed discrepancies={dash.discrepancies} productNames={dash.productNames} storeNames={dash.storeNames} />
       </div>
     </div>
   );

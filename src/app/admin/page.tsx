@@ -1,12 +1,15 @@
-import { CheckCircle2, AlertTriangle } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Coins, Activity } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getDiscrepancies } from "@/lib/data";
+import { getDiscrepancies, getAdminAnalytics, getAlerts } from "@/lib/data";
 import { StatTile } from "@/components/stat-tile";
+import { KpiTile } from "@/components/kpi-tile";
 import { AnomalyFeed } from "@/components/anomaly-feed";
+import { AlertsPanel } from "@/components/alerts-panel";
+import { AreaTrend } from "@/components/charts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatNumber, formatDateTime } from "@/lib/utils";
+import { formatNumber, formatDateTime, formatPHP } from "@/lib/utils";
 
 export default async function AdminPage() {
   await requireProfile();
@@ -36,7 +39,7 @@ export default async function AdminPage() {
       .limit(20),
   ]);
 
-  const discrepancies = await getDiscrepancies();
+  const [discrepancies, adminA, alerts] = await Promise.all([getDiscrepancies(), getAdminAnalytics(), getAlerts()]);
   const mismatchRows = (mismatches ?? []) as Array<{
     store_id: string;
     product_id: string;
@@ -66,15 +69,27 @@ export default async function AdminPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Consignors" value={formatNumber(consignorCount ?? 0)} />
-        <StatTile label="Stores" value={formatNumber(storeCount ?? 0)} />
-        <StatTile label="Active agreements" value={formatNumber(agreementCount ?? 0)} />
+        <KpiTile icon={Coins} label="GMV (30 days)" value={formatPHP(adminA.gmv30)} hint={`${adminA.units30} units`} spark={adminA.series.map((s) => s.value)} />
+        <KpiTile icon={Activity} label="Ledger movements" value={formatNumber(adminA.movements)} hint="Append-only entries" />
+        <StatTile label="Consignors / Stores" value={`${formatNumber(consignorCount ?? 0)} / ${formatNumber(storeCount ?? 0)}`} hint={`${formatNumber(agreementCount ?? 0)} active agreements`} />
         <StatTile
           label="Open discrepancies"
           value={formatNumber(discrepancies.length)}
           tone={discrepancies.length > 0 ? "warn" : "ok"}
         />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">System GMV trend</CardTitle>
+          <p className="text-xs text-muted-foreground">Gross sales across all stores, last 14 days</p>
+        </CardHeader>
+        <CardContent>
+          <AreaTrend points={adminA.series} valueLabel={formatPHP} />
+        </CardContent>
+      </Card>
+
+      <AlertsPanel alerts={alerts} title="System alerts & discrepancies" />
 
       <Card>
         <CardHeader>

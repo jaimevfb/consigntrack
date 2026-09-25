@@ -3,6 +3,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { NavLink } from "@/components/nav-link";
 import { signOut } from "@/app/_actions/auth";
 import { Button } from "@/components/ui/button";
+import { Wordmark } from "@/components/brand";
 
 export interface NavItem {
   href: string;
@@ -27,8 +28,8 @@ export function AppShell({
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
         <div className="container flex h-14 items-center justify-between gap-4">
           <div className="flex items-center gap-6">
-            <Link href="/" className="font-serif text-lg font-semibold text-primary">
-              ConsignTrack
+            <Link href="/" aria-label="ConsignTrack home">
+              <Wordmark />
             </Link>
             <nav className="hidden items-center gap-1 md:flex">
               {nav.map((item) => (
