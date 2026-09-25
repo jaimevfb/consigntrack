@@ -12,6 +12,9 @@ import {
   ShoppingCart,
   Boxes,
   RotateCcw,
+  QrCode,
+  ScanLine,
+  AlertTriangle,
   Menu,
   X,
 } from "lucide-react";
@@ -31,6 +34,9 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   sell: ShoppingCart,
   inventory: Boxes,
   returns: RotateCcw,
+  items: QrCode,
+  scan: ScanLine,
+  exceptions: AlertTriangle,
 };
 
 export interface NavItem {

@@ -2,7 +2,9 @@ import Link from "next/link";
 import { ShoppingCart, Users, Package, Coins, FileClock, ArrowUpRight } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { getStoreDashboard, getStoreAnalytics, getAlerts } from "@/lib/data";
+import { getItemStatusCounts } from "@/lib/items-data";
 import { AlertsPanel } from "@/components/alerts-panel";
+import { CustodySummary } from "@/components/custody-summary";
 import { AreaTrend, Donut, RankedBars } from "@/components/charts";
 import { KpiTile, MiniStat } from "@/components/kpi-tile";
 import { Button } from "@/components/ui/button";
@@ -20,10 +22,11 @@ export default async function StoreDashboardPage() {
   }
   const isManager = profile.role === "store_manager" || profile.role === "admin";
 
-  const [dash, analytics, alerts] = await Promise.all([
+  const [dash, analytics, alerts, itemCounts] = await Promise.all([
     getStoreDashboard(profile.store_id),
     getStoreAnalytics(profile.store_id),
     getAlerts(),
+    getItemStatusCounts(),
   ]);
 
   return (
@@ -115,6 +118,7 @@ export default async function StoreDashboardPage() {
         </Card>
       </div>
 
+      <CustodySummary counts={itemCounts} itemsHref="/store/items" />
       <AlertsPanel alerts={alerts} />
     </div>
   );

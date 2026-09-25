@@ -2,6 +2,8 @@ import { CheckCircle2, AlertTriangle, Coins, Activity } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getDiscrepancies, getAdminAnalytics, getAlerts } from "@/lib/data";
+import { getItemStatusCounts } from "@/lib/items-data";
+import { CustodySummary } from "@/components/custody-summary";
 import { StatTile } from "@/components/stat-tile";
 import { KpiTile, MiniStat } from "@/components/kpi-tile";
 import { AlertsPanel } from "@/components/alerts-panel";
@@ -36,7 +38,7 @@ export default async function AdminPage() {
       .limit(20),
   ]);
 
-  const [discrepancies, adminA, alerts] = await Promise.all([getDiscrepancies(), getAdminAnalytics(), getAlerts()]);
+  const [discrepancies, adminA, alerts, itemCounts] = await Promise.all([getDiscrepancies(), getAdminAnalytics(), getAlerts(), getItemStatusCounts()]);
   const mismatchRows = (mismatches ?? []) as Array<{
     store_id: string;
     product_id: string;
@@ -91,6 +93,7 @@ export default async function AdminPage() {
         </CardContent>
       </Card>
 
+      <CustodySummary counts={itemCounts} itemsHref="/admin/items" />
       <AlertsPanel alerts={alerts} title="System alerts & discrepancies" />
 
       <Card>

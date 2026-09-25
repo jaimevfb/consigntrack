@@ -3,7 +3,9 @@ import { Package, Coins, Wallet, AlertCircle, ArrowUpRight } from "lucide-react"
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getConsignorDashboard, getConsignorAnalytics, getAlerts } from "@/lib/data";
+import { getItemStatusCounts } from "@/lib/items-data";
 import { AlertsPanel } from "@/components/alerts-panel";
+import { CustodySummary } from "@/components/custody-summary";
 import { AreaTrend, Donut, RankedBars } from "@/components/charts";
 import { KpiTile, MiniStat } from "@/components/kpi-tile";
 import { StatusPill } from "@/components/status-pill";
@@ -23,10 +25,11 @@ export default async function ConsignorDashboardPage() {
   }
 
   const supabase = createClient();
-  const [dash, analytics, alerts, { data: settRows }] = await Promise.all([
+  const [dash, analytics, alerts, itemCounts, { data: settRows }] = await Promise.all([
     getConsignorDashboard(profile.consignor_id),
     getConsignorAnalytics(profile.consignor_id),
     getAlerts(),
+    getItemStatusCounts(),
     supabase.from("settlements").select("gross_sales, commission, returns_total, net_payable"),
   ]);
 
@@ -164,6 +167,7 @@ export default async function ConsignorDashboardPage() {
         </Card>
       </div>
 
+      <CustodySummary counts={itemCounts} itemsHref="/consignor/items" />
       <AlertsPanel alerts={alerts} />
     </div>
   );

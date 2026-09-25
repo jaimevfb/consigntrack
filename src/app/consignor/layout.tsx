@@ -28,6 +28,7 @@ export default async function ConsignorLayout({ children }: { children: React.Re
       nav={[
         { href: "/consignor", label: "Dashboard", icon: "dashboard" },
         { href: "/consignor/analytics", label: "Analytics", icon: "analytics" },
+        { href: "/consignor/items", label: "Tracked items", icon: "items" },
         { href: "/consignor/deliveries", label: "Deliveries", icon: "deliveries" },
         { href: "/consignor/settlements", label: "Settlements", icon: "settlements" },
         { href: "/consignor/reports", label: "Reports", icon: "reports" },

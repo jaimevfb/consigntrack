@@ -119,6 +119,79 @@ export interface Payment {
   confirmed_at: string | null;
 }
 
+export type ItemStatus =
+  | "created"
+  | "labeled"
+  | "dispatched"
+  | "in_transit"
+  | "delivered"
+  | "received_confirmed"
+  | "listed"
+  | "sold"
+  | "settled"
+  | "returned_to_consignor"
+  | "lost"
+  | "damaged"
+  | "disputed";
+
+export interface Item {
+  id: string;
+  consignor_id: string;
+  store_id: string;
+  agreement_id: string | null;
+  product_id: string | null;
+  code: string;
+  qr_token: string;
+  description: string;
+  category: string | null;
+  condition: string | null;
+  asking_price: number;
+  status: ItemStatus;
+  current_holder: "consignor" | "carrier" | "consignee" | "buyer" | "none";
+  sale_price: number | null;
+  sold_at: string | null;
+  buyer_ref: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScanEvent {
+  id: string;
+  item_id: string;
+  actor_id: string | null;
+  actor_role: string | null;
+  event_type: string;
+  from_status: string | null;
+  to_status: string | null;
+  note: string | null;
+  photo_url: string | null;
+  is_exception: boolean;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface ItemException {
+  id: string;
+  item_id: string | null;
+  kind: string;
+  detail: string | null;
+  status: "open" | "resolved";
+  resolution: string | null;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export interface Dispute {
+  id: string;
+  item_id: string | null;
+  subject: string;
+  raised_by: string | null;
+  raised_role: string | null;
+  status: "open" | "resolved";
+  resolution: string | null;
+  created_at: string;
+}
+
 export interface Discrepancy {
   kind: "unexplained_shrinkage" | "level_mismatch";
   store_id: string;
