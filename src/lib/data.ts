@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type {
   Agreement,
@@ -40,12 +41,12 @@ type SaleItemRow = {
 // ---------------------------------------------------------------------------
 // Discrepancies (BR9) — the anomaly feed, RLS-scoped to the caller.
 // ---------------------------------------------------------------------------
-export async function getDiscrepancies(): Promise<Discrepancy[]> {
+export const getDiscrepancies = cache(async (): Promise<Discrepancy[]> => {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("find_discrepancies");
   if (error) return [];
   return (data ?? []) as Discrepancy[];
-}
+});
 
 // ---------------------------------------------------------------------------
 // Consignor dashboard
@@ -485,7 +486,7 @@ export interface AlertsBundle {
   items: AlertItem[];
 }
 
-async function nameMaps() {
+const nameMaps = cache(async () => {
   const supabase = createClient();
   const [{ data: p }, { data: s }, { data: c }] = await Promise.all([
     supabase.from("products").select("id, name"),
@@ -497,12 +498,12 @@ async function nameMaps() {
     store: Object.fromEntries(((s ?? []) as { id: string; name: string }[]).map((x) => [x.id, x.name])),
     consignor: Object.fromEntries(((c ?? []) as { id: string; name: string }[]).map((x) => [x.id, x.name])),
   };
-}
+});
 
-export async function getAlerts(): Promise<AlertsBundle> {
+export const getAlerts = cache(async (): Promise<AlertsBundle> => {
   const supabase = createClient();
-  const names = await nameMaps();
-  const [{ data: aged }, { data: low }, disc, { data: setts }] = await Promise.all([
+  const [names, { data: aged }, { data: low }, disc, { data: setts }] = await Promise.all([
+    nameMaps(),
     supabase.rpc("find_aged_stock", { p_days: 30 }),
     supabase.rpc("find_low_stock", { p_threshold: 5 }),
     getDiscrepancies(),
@@ -550,7 +551,7 @@ export async function getAlerts(): Promise<AlertsBundle> {
     counts: { aged: agedRows.length, low: lowRows.length, discrepancies: disc.length, overdue: overdue.length },
     items,
   };
-}
+});
 
 /** Minimal CSV serialiser (quotes fields, escapes quotes). */
 export function toCSV(headers: string[], rows: (string | number)[][]): string {

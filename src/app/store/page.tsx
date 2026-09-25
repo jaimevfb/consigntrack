@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ShoppingCart, Users, Package, Coins, FileClock, ArrowUpRight } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { getStoreDashboard, getStoreAnalytics, getAlerts } from "@/lib/data";
-import { AnomalyFeed } from "@/components/anomaly-feed";
 import { AlertsPanel } from "@/components/alerts-panel";
 import { AreaTrend, Donut, RankedBars } from "@/components/charts";
 import { KpiTile, MiniStat } from "@/components/kpi-tile";
@@ -116,10 +115,7 @@ export default async function StoreDashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <AlertsPanel alerts={alerts} />
-        <AnomalyFeed discrepancies={dash.discrepancies} />
-      </div>
+      <AlertsPanel alerts={alerts} />
     </div>
   );
 }

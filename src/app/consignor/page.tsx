@@ -3,7 +3,6 @@ import { Package, Coins, Wallet, AlertCircle, ArrowUpRight } from "lucide-react"
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getConsignorDashboard, getConsignorAnalytics, getAlerts } from "@/lib/data";
-import { AnomalyFeed } from "@/components/anomaly-feed";
 import { AlertsPanel } from "@/components/alerts-panel";
 import { AreaTrend, Donut, RankedBars } from "@/components/charts";
 import { KpiTile, MiniStat } from "@/components/kpi-tile";
@@ -165,11 +164,7 @@ export default async function ConsignorDashboardPage() {
         </Card>
       </div>
 
-      {/* Alerts + anomaly */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <AlertsPanel alerts={alerts} />
-        <AnomalyFeed discrepancies={dash.discrepancies} productNames={dash.productNames} storeNames={dash.storeNames} />
-      </div>
+      <AlertsPanel alerts={alerts} />
     </div>
   );
 }

@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getDiscrepancies, getAdminAnalytics, getAlerts } from "@/lib/data";
 import { StatTile } from "@/components/stat-tile";
 import { KpiTile, MiniStat } from "@/components/kpi-tile";
-import { AnomalyFeed } from "@/components/anomaly-feed";
 import { AlertsPanel } from "@/components/alerts-panel";
 import { AreaTrend } from "@/components/charts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +21,6 @@ export default async function AdminPage() {
     { data: mismatches },
     { data: products },
     { data: stores },
-    { data: consignors },
     { data: audit },
   ] = await Promise.all([
     supabase.from("consignors").select("*", { count: "exact", head: true }),
@@ -31,7 +29,6 @@ export default async function AdminPage() {
     supabase.rpc("reconcile_stock"),
     supabase.from("products").select("id, name"),
     supabase.from("stores").select("id, name"),
-    supabase.from("consignors").select("id, name"),
     supabase
       .from("audit_log")
       .select("id, table_name, field, old_value, new_value, created_at")
@@ -49,7 +46,6 @@ export default async function AdminPage() {
   }>;
   const productNames = Object.fromEntries(((products ?? []) as { id: string; name: string }[]).map((p) => [p.id, p.name]));
   const storeNames = Object.fromEntries(((stores ?? []) as { id: string; name: string }[]).map((s) => [s.id, s.name]));
-  const consignorNames = Object.fromEntries(((consignors ?? []) as { id: string; name: string }[]).map((c) => [c.id, c.name]));
   const auditRows = (audit ?? []) as Array<{
     id: string;
     table_name: string;
@@ -140,14 +136,7 @@ export default async function AdminPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <AnomalyFeed
-          discrepancies={discrepancies}
-          productNames={productNames}
-          storeNames={storeNames}
-          consignorNames={consignorNames}
-        />
-
+      <div className="grid gap-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Price &amp; commission audit (BR8)</CardTitle>
