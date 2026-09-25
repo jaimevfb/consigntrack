@@ -26,11 +26,11 @@ export default async function ConsignorLayout({ children }: { children: React.Re
       userName={profile.full_name}
       scopeLabel={scopeLabel}
       nav={[
-        { href: "/consignor", label: "Dashboard" },
-        { href: "/consignor/analytics", label: "Analytics" },
-        { href: "/consignor/deliveries", label: "Deliveries" },
-        { href: "/consignor/settlements", label: "Settlements" },
-        { href: "/consignor/reports", label: "Reports" },
+        { href: "/consignor", label: "Dashboard", icon: "dashboard" },
+        { href: "/consignor/analytics", label: "Analytics", icon: "analytics" },
+        { href: "/consignor/deliveries", label: "Deliveries", icon: "deliveries" },
+        { href: "/consignor/settlements", label: "Settlements", icon: "settlements" },
+        { href: "/consignor/reports", label: "Reports", icon: "reports" },
       ]}
     >
       {children}

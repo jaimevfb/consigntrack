@@ -18,16 +18,16 @@ export default async function StoreLayout({ children }: { children: React.ReactN
 
   const isManager = profile.role === "store_manager" || profile.role === "admin";
   const nav = [
-    { href: "/store", label: "Dashboard" },
-    ...(isManager ? [{ href: "/store/analytics", label: "Analytics" }] : []),
-    { href: "/store/sales", label: "Sell" },
-    { href: "/store/deliveries", label: "Deliveries" },
-    { href: "/store/inventory", label: "Inventory" },
-    { href: "/store/returns", label: "Returns" },
+    { href: "/store", label: "Dashboard", icon: "dashboard" },
+    ...(isManager ? [{ href: "/store/analytics", label: "Analytics", icon: "analytics" }] : []),
+    { href: "/store/sales", label: "Sell", icon: "sell" },
+    { href: "/store/deliveries", label: "Deliveries", icon: "deliveries" },
+    { href: "/store/inventory", label: "Inventory", icon: "inventory" },
+    { href: "/store/returns", label: "Returns", icon: "returns" },
     ...(isManager
       ? [
-          { href: "/store/settlements", label: "Settlements" },
-          { href: "/store/reports", label: "Reports" },
+          { href: "/store/settlements", label: "Settlements", icon: "settlements" },
+          { href: "/store/reports", label: "Reports", icon: "reports" },
         ]
       : []),
   ];

@@ -42,11 +42,30 @@ export interface TrendPoint {
   value: number;
 }
 
-/** Area + line trend chart with a light baseline and sparse x labels. */
+/** Smooth a polyline into a bezier path (Catmull-Rom → cubic). */
+function smoothPath(pts: readonly (readonly [number, number])[]): string {
+  if (pts.length < 2) return pts.length ? `M${pts[0][0]},${pts[0][1]}` : "";
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] ?? p2;
+    const t = 0.16;
+    const c1x = p1[0] + (p2[0] - p0[0]) * t;
+    const c1y = p1[1] + (p2[1] - p0[1]) * t;
+    const c2x = p2[0] - (p3[0] - p1[0]) * t;
+    const c2y = p2[1] - (p3[1] - p1[1]) * t;
+    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d;
+}
+
+/** Compact, smoothed area+line trend with a real y-axis and light grid. */
 export function AreaTrend({
   points,
-  height = 180,
-  valueLabel,
+  height = 150,
+  valueLabel = (n) => String(n),
   stroke = "var(--primary)",
 }: {
   points: TrendPoint[];
@@ -56,54 +75,51 @@ export function AreaTrend({
 }) {
   const w = 640;
   const h = height;
-  const padX = 8;
-  const padTop = 12;
+  const padL = 44;
+  const padR = 10;
+  const padTop = 10;
   const padBottom = 22;
+  const innerW = w - padL - padR;
   const innerH = h - padTop - padBottom;
   const max = Math.max(1, ...points.map((p) => p.value));
-  const step = points.length > 1 ? (w - padX * 2) / (points.length - 1) : 0;
-  const xy = points.map((p, i) => {
-    const x = padX + i * step;
-    const y = padTop + innerH - (p.value / max) * innerH;
-    return [x, y] as const;
-  });
-  const line = xy.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
-  const area = xy.length ? `${line} L${xy[xy.length - 1][0]},${padTop + innerH} L${xy[0][0]},${padTop + innerH} Z` : "";
-  const gridYs = [0, 0.5, 1].map((f) => padTop + innerH - f * innerH);
-  const labelEvery = Math.ceil(points.length / 6);
+  const step = points.length > 1 ? innerW / (points.length - 1) : 0;
+  const xy = points.map((p, i) => [padL + i * step, padTop + innerH - (p.value / max) * innerH] as const);
+  const line = smoothPath(xy);
+  const area = xy.length ? `${line} L${xy[xy.length - 1][0].toFixed(1)},${padTop + innerH} L${xy[0][0].toFixed(1)},${padTop + innerH} Z` : "";
+  const ticks = [1, 0.5, 0];
+  const labelEvery = Math.ceil(points.length / 7);
+  const gid = `grad-${stroke.replace(/[^a-z]/gi, "")}`;
 
   return (
     <div className="w-full overflow-hidden">
-      <svg viewBox={`0 0 ${w} ${h}`} className="h-auto w-full" role="img" aria-label="Sales trend">
-        {gridYs.map((y, i) => (
-          <line key={i} x1={0} x2={w} y1={y} y2={y} stroke="var(--border)" strokeWidth={1} />
-        ))}
-        {area ? <path d={area} fill={stroke} opacity={0.12} /> : null}
+      <svg viewBox={`0 0 ${w} ${h}`} className="h-auto w-full" role="img" aria-label="Trend">
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={stroke} stopOpacity={0.22} />
+            <stop offset="100%" stopColor={stroke} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        {ticks.map((f, i) => {
+          const y = padTop + innerH - f * innerH;
+          return (
+            <g key={i}>
+              <line x1={padL} x2={w - padR} y1={y} y2={y} stroke="var(--border)" strokeWidth={1} strokeDasharray="3 4" />
+              <text x={padL - 8} y={y + 3} textAnchor="end" className="fill-[var(--muted-foreground)]" style={{ fontSize: 9, fontFamily: "ui-monospace, monospace" }}>
+                {valueLabel(Math.round(max * f))}
+              </text>
+            </g>
+          );
+        })}
+        {area ? <path d={area} fill={`url(#${gid})`} /> : null}
         <path d={line} fill="none" stroke={stroke} strokeWidth={2} vectorEffect="non-scaling-stroke" />
-        {xy.map((p, i) => (
-          <circle key={i} cx={p[0]} cy={p[1]} r={2} fill={stroke} />
-        ))}
         {points.map((p, i) =>
           i % labelEvery === 0 || i === points.length - 1 ? (
-            <text
-              key={i}
-              x={padX + i * step}
-              y={h - 6}
-              textAnchor="middle"
-              className="fill-[var(--muted-foreground)]"
-              style={{ fontSize: 10, fontFamily: "ui-monospace, monospace" }}
-            >
+            <text key={i} x={padL + i * step} y={h - 6} textAnchor="middle" className="fill-[var(--muted-foreground)]" style={{ fontSize: 9, fontFamily: "ui-monospace, monospace" }}>
               {p.label}
             </text>
           ) : null,
         )}
       </svg>
-      {valueLabel ? (
-        <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-          <span className="tnum">0</span>
-          <span className="tnum">peak {valueLabel(max)}</span>
-        </div>
-      ) : null}
     </div>
   );
 }

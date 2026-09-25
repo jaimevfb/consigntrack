@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       role={profile.role}
       userName={profile.full_name}
       scopeLabel="Administrator"
-      nav={[{ href: "/admin", label: "Overview" }]}
+      nav={[{ href: "/admin", label: "Overview", icon: "overview" }]}
     >
       {children}
     </AppShell>

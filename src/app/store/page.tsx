@@ -5,7 +5,7 @@ import { getStoreDashboard, getStoreAnalytics, getAlerts } from "@/lib/data";
 import { AnomalyFeed } from "@/components/anomaly-feed";
 import { AlertsPanel } from "@/components/alerts-panel";
 import { AreaTrend, Donut, RankedBars } from "@/components/charts";
-import { KpiTile } from "@/components/kpi-tile";
+import { KpiTile, MiniStat } from "@/components/kpi-tile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPHP, formatNumber } from "@/lib/utils";
@@ -50,32 +50,34 @@ export default async function StoreDashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiTile icon={Users} label="Consignors" value={formatNumber(dash.tiles.consignors)} hint="Active agreements" />
-        <KpiTile icon={Package} label="Items on hand" value={formatNumber(dash.tiles.onHand)} hint="All consignors" />
-        <KpiTile
-          icon={Coins}
-          label="Sold (30 days)"
-          value={formatPHP(analytics.tiles.gross30)}
-          hint={`${analytics.tiles.units30} units`}
-          spark={analytics.series.map((s) => s.value)}
-        />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiTile icon={Coins} label="Sold" hint="Last 30 days" value={formatPHP(analytics.tiles.gross30)} delta={analytics.tiles.deltaPct} />
+        <KpiTile icon={Users} label="Consignors" hint="Active agreements" value={formatNumber(dash.tiles.consignors)} />
+        <KpiTile icon={Package} label="Items on hand" hint="All consignors" value={formatNumber(dash.tiles.onHand)} />
         <KpiTile
           icon={FileClock}
           label="Settlements due"
+          hint="Awaiting payment"
           value={formatNumber(dash.tiles.settlementsDue)}
           tone={dash.tiles.settlementsDue > 0 ? "warn" : "default"}
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Sales trend</CardTitle>
-            <p className="text-xs text-muted-foreground">Gross sales, last 14 days</p>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Sales analytics</CardTitle>
+              <span className="text-xs text-muted-foreground">Last 14 days</span>
+            </div>
+            <div className="mt-3 flex gap-6">
+              <MiniStat label="Gross" value={formatPHP(analytics.tiles.gross30)} />
+              <MiniStat label="Units" value={formatNumber(analytics.tiles.units30)} />
+              <MiniStat label="Avg. order" value={formatPHP(analytics.tiles.avgOrder)} />
+            </div>
           </CardHeader>
           <CardContent>
-            <AreaTrend points={analytics.series} valueLabel={formatPHP} />
+            <AreaTrend points={analytics.series} valueLabel={(n) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n))} />
           </CardContent>
         </Card>
         <Card>

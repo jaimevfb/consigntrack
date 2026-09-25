@@ -3,7 +3,7 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getDiscrepancies, getAdminAnalytics, getAlerts } from "@/lib/data";
 import { StatTile } from "@/components/stat-tile";
-import { KpiTile } from "@/components/kpi-tile";
+import { KpiTile, MiniStat } from "@/components/kpi-tile";
 import { AnomalyFeed } from "@/components/anomaly-feed";
 import { AlertsPanel } from "@/components/alerts-panel";
 import { AreaTrend } from "@/components/charts";
@@ -68,9 +68,9 @@ export default async function AdminPage() {
         <p className="text-sm text-muted-foreground">Ledger integrity, anomalies, and the change audit trail.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiTile icon={Coins} label="GMV (30 days)" value={formatPHP(adminA.gmv30)} hint={`${adminA.units30} units`} spark={adminA.series.map((s) => s.value)} />
-        <KpiTile icon={Activity} label="Ledger movements" value={formatNumber(adminA.movements)} hint="Append-only entries" />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiTile icon={Coins} label="GMV" hint="Last 30 days" value={formatPHP(adminA.gmv30)} delta={adminA.deltaPct} />
+        <KpiTile icon={Activity} label="Ledger movements" hint="Append-only entries" value={formatNumber(adminA.movements)} />
         <StatTile label="Consignors / Stores" value={`${formatNumber(consignorCount ?? 0)} / ${formatNumber(storeCount ?? 0)}`} hint={`${formatNumber(agreementCount ?? 0)} active agreements`} />
         <StatTile
           label="Open discrepancies"
@@ -80,12 +80,18 @@ export default async function AdminPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">System GMV trend</CardTitle>
-          <p className="text-xs text-muted-foreground">Gross sales across all stores, last 14 days</p>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">System GMV</CardTitle>
+            <span className="text-xs text-muted-foreground">Last 14 days</span>
+          </div>
+          <div className="mt-3 flex gap-6">
+            <MiniStat label="GMV" value={formatPHP(adminA.gmv30)} />
+            <MiniStat label="Units" value={formatNumber(adminA.units30)} />
+          </div>
         </CardHeader>
         <CardContent>
-          <AreaTrend points={adminA.series} valueLabel={formatPHP} />
+          <AreaTrend points={adminA.series} valueLabel={(n) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n))} />
         </CardContent>
       </Card>
 

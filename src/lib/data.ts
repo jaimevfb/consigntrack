@@ -338,7 +338,7 @@ function lastNDates(n: number): { key: string; label: string }[] {
 }
 
 export interface AnalyticsBundle {
-  tiles: { gross30: number; units30: number; orders30: number; avgOrder: number };
+  tiles: { gross30: number; units30: number; orders30: number; avgOrder: number; deltaPct: number | null };
   series: DayPoint[]; // last 14 days gross
   topProducts: PerfRow[];
   breakdown: PerfRow[]; // by store (consignor) or by consignor (store)
@@ -365,22 +365,34 @@ function buildSeries(items: WindowItem[]): DayPoint[] {
   return days.map((d) => ({ label: d.label, value: Math.round(byDay.get(d.key) ?? 0) }));
 }
 
-function tilesFrom(items: WindowItem[]) {
-  const gross30 = items.reduce((a, r) => a + r.qty * r.unit_price, 0);
-  const units30 = items.reduce((a, r) => a + r.qty, 0);
-  const orders = new Set(items.map((r) => r.sales?.id ?? r.sales?.sold_at)).size;
+function cutoff(daysAgo: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString();
+}
+
+/** Split a 60-day window into last-30 vs prior-30 and build tiles + delta. */
+function tilesFrom(all: WindowItem[]) {
+  const c30 = cutoff(30);
+  const last = all.filter((r) => (r.sales?.sold_at ?? "") >= c30);
+  const prev = all.filter((r) => (r.sales?.sold_at ?? "") < c30);
+  const gross30 = last.reduce((a, r) => a + r.qty * r.unit_price, 0);
+  const grossPrev = prev.reduce((a, r) => a + r.qty * r.unit_price, 0);
+  const units30 = last.reduce((a, r) => a + r.qty, 0);
+  const orders = new Set(last.map((r) => r.sales?.id ?? r.sales?.sold_at)).size;
   return {
     gross30: Math.round(gross30),
     units30,
     orders30: orders,
     avgOrder: orders ? Math.round(gross30 / orders) : 0,
+    deltaPct: grossPrev > 0 ? Math.round(((gross30 - grossPrev) / grossPrev) * 100) : null,
   };
 }
 
 export async function getConsignorAnalytics(consignorId: string): Promise<AnalyticsBundle> {
   const supabase = createClient();
   const since = new Date();
-  since.setDate(since.getDate() - 30);
+  since.setDate(since.getDate() - 60);
   const [{ data: win }, report, { data: stores }] = await Promise.all([
     supabase
       .from("sale_items")
@@ -406,7 +418,7 @@ export async function getConsignorAnalytics(consignorId: string): Promise<Analyt
 export async function getStoreAnalytics(storeId: string): Promise<AnalyticsBundle> {
   const supabase = createClient();
   const since = new Date();
-  since.setDate(since.getDate() - 30);
+  since.setDate(since.getDate() - 60);
   const [{ data: win }, report] = await Promise.all([
     supabase
       .from("sale_items")
@@ -431,6 +443,7 @@ export interface AdminAnalytics {
   series: DayPoint[];
   gmv30: number;
   units30: number;
+  deltaPct: number | null;
   movements: number;
 }
 
@@ -438,7 +451,7 @@ export interface AdminAnalytics {
 export async function getAdminAnalytics(): Promise<AdminAnalytics> {
   const supabase = createClient();
   const since = new Date();
-  since.setDate(since.getDate() - 30);
+  since.setDate(since.getDate() - 60);
   const [{ data: win }, { count: movements }] = await Promise.all([
     supabase
       .from("sale_items")
@@ -447,10 +460,12 @@ export async function getAdminAnalytics(): Promise<AdminAnalytics> {
     supabase.from("stock_movements").select("*", { count: "exact", head: true }),
   ]);
   const items = (win ?? []) as unknown as WindowItem[];
+  const t = tilesFrom(items);
   return {
     series: buildSeries(items),
-    gmv30: Math.round(items.reduce((a, r) => a + r.qty * r.unit_price, 0)),
-    units30: items.reduce((a, r) => a + r.qty, 0),
+    gmv30: t.gross30,
+    units30: t.units30,
+    deltaPct: t.deltaPct,
     movements: movements ?? 0,
   };
 }
