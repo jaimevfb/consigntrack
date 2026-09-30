@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { AppShell } from "@/components/app-shell";
 import { createClient } from "@/lib/supabase/server";
+import { getAlerts } from "@/lib/data";
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireProfile();
@@ -34,8 +35,18 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       : []),
   ];
 
+  const alerts = await getAlerts();
+  const alertCount = alerts.counts.overdue + alerts.counts.discrepancies + alerts.counts.aged + alerts.counts.low;
+
   return (
-    <AppShell role={profile.role} userName={profile.full_name} scopeLabel={scopeLabel} nav={nav}>
+    <AppShell
+      role={profile.role}
+      userName={profile.full_name}
+      scopeLabel={scopeLabel}
+      nav={nav}
+      alertCount={alertCount}
+      alertHref="/store"
+    >
       {children}
     </AppShell>
   );

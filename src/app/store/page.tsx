@@ -5,6 +5,7 @@ import { getStoreDashboard, getStoreAnalytics, getAlerts } from "@/lib/data";
 import { getItemStatusCounts } from "@/lib/items-data";
 import { AlertsPanel } from "@/components/alerts-panel";
 import { CustodySummary } from "@/components/custody-summary";
+import { StaffDashboard } from "@/components/staff-dashboard";
 import { AreaTrend, Donut, RankedBars } from "@/components/charts";
 import { KpiTile, MiniStat } from "@/components/kpi-tile";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,11 @@ export default async function StoreDashboardPage() {
     );
   }
   const isManager = profile.role === "store_manager" || profile.role === "admin";
+
+  // Store staff get a task-focused operational view (no financials).
+  if (profile.role === "store_staff") {
+    return <StaffDashboard storeId={profile.store_id} name={profile.full_name} />;
+  }
 
   const [dash, analytics, alerts, itemCounts] = await Promise.all([
     getStoreDashboard(profile.store_id),

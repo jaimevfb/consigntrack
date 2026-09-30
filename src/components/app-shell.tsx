@@ -15,6 +15,9 @@ import {
   QrCode,
   ScanLine,
   AlertTriangle,
+  Bell,
+  Tag,
+  Handshake,
   Menu,
   X,
 } from "lucide-react";
@@ -37,6 +40,8 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   items: QrCode,
   scan: ScanLine,
   exceptions: AlertTriangle,
+  products: Tag,
+  agreements: Handshake,
 };
 
 export interface NavItem {
@@ -85,12 +90,16 @@ export function AppShell({
   userName,
   nav,
   children,
+  alertCount = 0,
+  alertHref = "/",
 }: {
   role: string;
   scopeLabel: string;
   userName: string;
   nav: NavItem[];
   children: React.ReactNode;
+  alertCount?: number;
+  alertHref?: string;
 }) {
   const [open, setOpen] = React.useState(false);
   const roleLabel = role.replace("_", " ");
@@ -145,6 +154,18 @@ export function AppShell({
               <div className="text-sm font-medium leading-tight">{scopeLabel}</div>
               <div className="text-xs capitalize text-muted-foreground">{roleLabel}</div>
             </div>
+            <Link
+              href={alertHref}
+              aria-label={`${alertCount} alerts`}
+              className="relative flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Bell className="h-[18px] w-[18px]" />
+              {alertCount > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-warn px-1 text-[10px] font-semibold text-warn-foreground">
+                  {alertCount > 9 ? "9+" : alertCount}
+                </span>
+              ) : null}
+            </Link>
             <ThemeToggle />
             <form action={signOut}>
               <Button variant="outline" size="sm" type="submit">
