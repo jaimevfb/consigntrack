@@ -23,45 +23,25 @@ const createDeliverySchema = z.object({
   send: z.boolean().default(true),
 });
 
-export async function createDelivery(input: unknown): Promise<ActionResult> {
+export async function createDelivery(input: unknown): Promise<ActionResult & { deliveryId?: string }> {
   const parsed = createDeliverySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
-  const { store_id, agreement_id, delivery_date, lines, send } = parsed.data;
+  const { store_id, agreement_id, delivery_date, lines } = parsed.data;
 
+  // A delivery now mints one QR-tracked item per unit; dispatch/receipt happen by
+  // scanning those QRs. This is the single, foolproof logistics pipeline.
   const supabase = createClient();
-  const { data: profile } = await supabase
-    .from("app_users")
-    .select("consignor_id")
-    .maybeSingle();
-  const consignorId = profile?.consignor_id;
-  if (!consignorId) return { ok: false, error: "Only consignor accounts can create deliveries." };
-
-  const { data: delivery, error: dErr } = await supabase
-    .from("deliveries")
-    .insert({
-      consignor_id: consignorId,
-      store_id,
-      agreement_id: agreement_id ?? null,
-      delivery_date,
-      status: send ? "sent" : "draft",
-    })
-    .select("id")
-    .single();
-  if (dErr || !delivery) return { ok: false, error: dErr?.message ?? "Could not create delivery." };
-
-  const { error: iErr } = await supabase.from("delivery_items").insert(
-    lines.map((l) => ({
-      delivery_id: delivery.id,
-      product_id: l.product_id,
-      qty: l.qty,
-      unit_price: l.unit_price,
-    })),
-  );
-  if (iErr) return { ok: false, error: iErr.message };
+  const { data: deliveryId, error } = await supabase.rpc("create_delivery_items", {
+    p_store_id: store_id,
+    p_agreement_id: agreement_id ?? null,
+    p_delivery_date: delivery_date,
+    p_lines: lines,
+  });
+  if (error) return { ok: false, error: error.message };
 
   revalidatePath("/consignor/deliveries");
   revalidatePath("/store/deliveries");
-  return { ok: true };
+  return { ok: true, deliveryId: deliveryId as string };
 }
 
 export async function confirmDelivery(deliveryId: string): Promise<ActionResult> {

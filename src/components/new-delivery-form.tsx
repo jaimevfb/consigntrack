@@ -53,7 +53,7 @@ export function NewDeliveryForm({ stores, products }: { stores: StoreOption[]; p
     0,
   );
 
-  async function submit(send: boolean) {
+  async function submit() {
     setError(null);
     if (!store) {
       setError("Select a store.");
@@ -76,14 +76,14 @@ export function NewDeliveryForm({ stores, products }: { stores: StoreOption[]; p
       agreement_id: store.agreementId,
       delivery_date: date,
       lines: cleanLines,
-      send,
+      send: true,
     });
     setSaving(false);
     if (!res.ok) {
       setError(res.error);
       return;
     }
-    router.push("/consignor/deliveries");
+    router.push(res.deliveryId ? `/consignor/deliveries/${res.deliveryId}` : "/consignor/deliveries");
     router.refresh();
   }
 
@@ -190,14 +190,9 @@ export function NewDeliveryForm({ stores, products }: { stores: StoreOption[]; p
         <div className="text-sm text-muted-foreground">
           Total value <span className="tnum ml-1 font-medium text-foreground">{formatPHP(total)}</span>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" disabled={saving} onClick={() => submit(false)}>
-            Save draft
-          </Button>
-          <Button disabled={saving} onClick={() => submit(true)}>
-            {saving ? "Sending…" : "Send to store"}
-          </Button>
-        </div>
+        <Button disabled={saving} onClick={() => submit()}>
+          {saving ? "Creating…" : "Create delivery & issue QR labels"}
+        </Button>
       </CardFooter>
     </Card>
   );

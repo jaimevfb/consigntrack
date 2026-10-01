@@ -21,33 +21,40 @@ make an item, or pick an existing one), so one item = one unit of that product.
 
 ---
 
-## Case A — Serialized item, happy path (logistics → settlement)
-1. **Create & label** (Consignor). `create_item` issues the unit, a backing
-   product, and a **signed QR label** → status `labeled`. *No stock yet* (not in a
-   store). Audit log records it.
-2. **Dispatch** (Consignor scans `dispatch`). Status `dispatched`, holder = carrier.
-   Still no stock at the store (goods are in transit).
-3. **Receive** (Consignee scans `receive`). **Dual-scan enforced**: rejected unless
-   a valid consignor dispatch scan exists. On success → status `received_confirmed`
-   **and a `+1 delivery` stock movement posts** → the unit now appears in the
-   store's **Inventory** and on-hand counts.
-4. **List** (Consignee scans `list`). Status `listed` (on the shelf). No stock change.
-5. **Sell** (Consignee scans `sell`, enters price). Status `sold` **and the system
-   writes a `sale` + `sale_item` + a `-1 sale` movement** → Inventory drops,
-   **Sales/Analytics update, and the sale feeds Settlement** for that consignor–store
-   pair.
-6. **Settle** (see Case F). Once settled/paid/confirmed the money side closes.
+## Case A — The standard pipeline (product → delivery → … → settlement)
+This is the single, foolproof operational flow. Logistics status is driven **only**
+by QR scans — there is no manual "confirm" button.
+1. **Make a product** (Consignor → *Products*). Your catalogue item + price.
+2. **Create a delivery** (Consignor → *Deliveries → New*). Pick the store and add
+   product lines with quantities. The system **mints one QR-labelled tracked item
+   per unit** (`create_delivery_items`) and opens the delivery as `draft`. Print the
+   labels from each item.
+3. **Dispatch by scanning** (Consignor → *Scan*, action **Dispatch**). Scan each
+   unit's QR → item `dispatched`; once any unit is dispatched the delivery flips to
+   `sent`. **This is the only way to dispatch** — no scan, no hand-off.
+4. **Receive by scanning** (Consignee → *Scan*, action **Receive**). Scan each QR →
+   **dual-scan enforced** (rejected unless a matching consignor dispatch exists) →
+   item `received_confirmed` and a `+1 delivery` movement posts, so the unit appears
+   in **Inventory**. When every unit is received, the delivery auto-flips to
+   `confirmed`. The store page shows live `received / total` progress.
+5. **List & sell** (Consignee → *Scan* `list` then `sell`, or the item page). Selling
+   writes a `sale` + `sale_item` + `-1` movement → **Sales, Analytics and
+   Settlement** update; Inventory drops.
+6. **Settle** (Case F).
 
-At every step the **custody timeline** (append-only scans) is the proof; the
-lifecycle stepper shows where the unit is.
+At every step the **custody timeline** (append-only scans) is the proof and the
+lifecycle stepper shows where each unit is.
 
-## Case B — Bulk quantity, happy path
-1. **Consignor** creates a delivery (products + quantities) and sends it.
-2. **Consignee confirms** the delivery (`confirm_delivery`) → `+qty delivery`
-   movements → stock appears (BR4: draft/sent deliveries are *not* stock).
-3. **Consignee records sales** on the fast Sell screen or **CSV/POS import** →
-   `sale`/`sale_items` + `-qty sale` movements (BR1 blocks overselling).
-4. Settlement (Case F) aggregates the period.
+*Single-item variant:* a consignor can also create one ad-hoc tracked item
+(Consignor → *Tracked items → New*) without a delivery; it follows the same scan
+lifecycle from step 3.
+
+## Case B — Bulk quantity (legacy / non-serialized)
+For goods tracked only by count (no per-unit QR), the older path still exists:
+consignor delivery with quantities → consignee **confirms** (`confirm_delivery`) →
+`+qty` stock → sales via the fast Sell screen or **CSV/POS import**. New deliveries
+use the serialized pipeline in Case A; this remains for high-volume, non-serialized
+stock.
 
 ## Case C — Returns
 - **Serialized:** Consignee scans `return` → status `returned_to_consignor`,

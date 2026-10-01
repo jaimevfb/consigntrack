@@ -13,14 +13,15 @@ export default async function ConsignorDeliveriesPage() {
   const supabase = createClient();
   const { data } = await supabase
     .from("deliveries")
-    .select("*, stores(name), delivery_items(qty)")
+    .select("*, stores(name), items(id), delivery_items(qty)")
     .order("delivery_date", { ascending: false });
 
-  const deliveries = (data ?? []) as Array<{
+  const deliveries = (data ?? []) as unknown as Array<{
     id: string;
     delivery_date: string;
     status: string;
     stores: { name: string } | null;
+    items: { id: string }[];
     delivery_items: { qty: number }[];
   }>;
 
@@ -51,19 +52,24 @@ export default async function ConsignorDeliveriesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {deliveries.map((d) => (
-                <TableRow key={d.id}>
-                  <TableCell className="tnum text-xs">{shortId(d.id)}</TableCell>
-                  <TableCell>{formatDate(d.delivery_date)}</TableCell>
-                  <TableCell className="font-medium">{d.stores?.name ?? "—"}</TableCell>
-                  <TableCell className="tnum text-right">
-                    {d.delivery_items.reduce((a, i) => a + i.qty, 0)}
-                  </TableCell>
-                  <TableCell>
-                    <DeliveryStatusPill status={d.status} />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {deliveries.map((d) => {
+                const units = d.items.length > 0 ? d.items.length : d.delivery_items.reduce((a, i) => a + i.qty, 0);
+                return (
+                  <TableRow key={d.id}>
+                    <TableCell className="tnum text-xs">
+                      <Link href={`/consignor/deliveries/${d.id}`} className="hover:underline">{shortId(d.id)}</Link>
+                    </TableCell>
+                    <TableCell>{formatDate(d.delivery_date)}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link href={`/consignor/deliveries/${d.id}`} className="hover:underline">{d.stores?.name ?? "—"}</Link>
+                    </TableCell>
+                    <TableCell className="tnum text-right">{units}</TableCell>
+                    <TableCell>
+                      <DeliveryStatusPill status={d.status} />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {deliveries.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
