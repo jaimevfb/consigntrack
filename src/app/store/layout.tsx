@@ -29,6 +29,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     { href: "/store/returns", label: "Returns", icon: "returns" },
     ...(isManager
       ? [
+          { href: "/store/partners", label: "Partners", icon: "agreements" },
           { href: "/store/settlements", label: "Settlements", icon: "settlements" },
           { href: "/store/reports", label: "Reports", icon: "reports" },
         ]
