@@ -33,10 +33,10 @@ export default async function ConsignorLayout({ children }: { children: React.Re
       nav={[
         { href: "/consignor", label: "Dashboard", icon: "dashboard" },
         { href: "/consignor/analytics", label: "Analytics", icon: "analytics" },
-        { href: "/consignor/items", label: "Tracked items", icon: "items" },
-        { href: "/consignor/scan", label: "Scan", icon: "scan" },
+        { href: "/consignor/items", label: "Item records", icon: "items" },
+        { href: "/consignor/scan", label: "Scan items", icon: "scan" },
         { href: "/consignor/products", label: "Products", icon: "products" },
-        { href: "/consignor/partners", label: "Partners", icon: "agreements" },
+        { href: "/consignor/partners", label: "Business partners", icon: "agreements" },
         { href: "/consignor/deliveries", label: "Deliveries", icon: "deliveries" },
         { href: "/consignor/settlements", label: "Settlements", icon: "settlements" },
         { href: "/consignor/reports", label: "Reports", icon: "reports" },

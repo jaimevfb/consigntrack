@@ -39,7 +39,7 @@ export default async function StoreInventoryPage() {
       <div>
         <h1 className="text-2xl">Inventory</h1>
         <p className="text-sm text-muted-foreground">
-          Stock on hand by consignor. Title stays with the consignor until sale (BR2).
+          Current on-hand quantities by consignor. Products remain the consignor’s property until sold.
         </p>
       </div>
 
@@ -85,7 +85,7 @@ export default async function StoreInventoryPage() {
 
       {groups.size === 0 ? (
         <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-          No stock on hand. Confirm an incoming delivery to add stock.
+          There is no inventory on hand yet. Confirm an incoming delivery to add products to stock.
         </div>
       ) : null}
     </div>

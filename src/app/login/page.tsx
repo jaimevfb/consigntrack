@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Store, Package, Check, ShieldCheck, LineChart, Layers } from "lucide-react";
+import { Store, Package, Check, ShieldCheck, LineChart, Layers, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,21 +16,25 @@ export default function AuthPage() {
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
       {/* Brand / value panel */}
-      <section className="relative hidden flex-col justify-between bg-primary p-10 text-primary-foreground lg:flex">
+      <section className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex xl:p-14">
         <Wordmark inverted className="text-primary-foreground [&_span]:text-primary-foreground" />
-        <div className="space-y-6">
-          <h1 className="max-w-md font-serif text-4xl font-semibold leading-tight">
-            One shared ledger for consignors and stores.
+        <div className="relative z-10 space-y-7">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/10 px-3 py-1.5 text-xs font-medium text-primary-foreground/90">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
+            Consignment operations platform
+          </div>
+          <h1 className="max-w-lg font-serif text-4xl font-semibold leading-tight xl:text-5xl">
+            Consignment, managed with clarity.
           </h1>
-          <p className="max-w-md text-primary-foreground/80">
-            Record deliveries, sales, returns and settlements once — both sides read the same
-            numbers, and discrepancies surface the moment they happen.
+          <p className="max-w-lg text-base leading-7 text-primary-foreground/80">
+            Keep consignors and stores aligned with a shared record of inventory, sales, returns,
+            and settlement activity.
           </p>
-          <ul className="space-y-3 text-sm">
+          <ul className="space-y-4 pt-1 text-sm">
             {[
-              [Layers, "Multi-store, multi-consignor shared ledger"],
-              [LineChart, "Live analytics: sales trends, settlements, performance"],
-              [ShieldCheck, "Role-based access with an append-only audit trail"],
+              [Layers, "A consistent record across every business relationship"],
+              [LineChart, "Clear reporting for sales and settlements"],
+              [ShieldCheck, "Role-based access and traceable activity"],
             ].map(([Icon, text], i) => (
               <li key={i} className="flex items-center gap-3">
                 <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary-foreground/15">
@@ -42,14 +46,14 @@ export default function AuthPage() {
           </ul>
         </div>
         <p className="text-xs text-primary-foreground/70">
-          Built for Philippine MSME retail · Data Privacy Act aligned
+          Designed for independent retailers and product makers in the Philippines.
         </p>
       </section>
 
       {/* Auth card */}
       <section className="flex items-center justify-center bg-background px-4 py-10">
         <div className="w-full max-w-sm">
-          <div className="mb-6 lg:hidden">
+          <div className="mb-8 lg:hidden">
             <Wordmark />
           </div>
           <AuthCard />
@@ -65,8 +69,8 @@ function AuthCard() {
       <CardContent className="pt-6">
         <Tabs defaultValue="login">
           <TabsList className="mb-5 grid w-full grid-cols-2">
-            <TabsTrigger value="login">Log in</TabsTrigger>
-            <TabsTrigger value="signup">Sign up</TabsTrigger>
+            <TabsTrigger value="login">Sign in</TabsTrigger>
+            <TabsTrigger value="signup">Create account</TabsTrigger>
           </TabsList>
           <TabsContent value="login">
             <LoginForm />
@@ -94,15 +98,19 @@ function LoginForm() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) return setError(error.message);
+    if (error) return setError("We couldn’t sign you in. Check your email and password, then try again.");
     router.push("/");
     router.refresh();
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      <div className="mb-5 space-y-1">
+        <h2 className="text-xl font-semibold">Welcome back</h2>
+        <p className="text-sm text-muted-foreground">Sign in to continue to your workspace.</p>
+      </div>
       <div className="space-y-1.5">
-        <Label htmlFor="l-email">Email</Label>
+        <Label htmlFor="l-email">Work email</Label>
         <Input id="l-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div className="space-y-1.5">
@@ -111,11 +119,9 @@ function LoginForm() {
       </div>
       {error ? <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? "Signing in…" : "Log in"}
+        {loading ? "Signing in…" : "Sign in"}
+        {!loading ? <ArrowRight className="ml-2 h-4 w-4" /> : null}
       </Button>
-      <p className="text-center text-xs text-muted-foreground">
-        Demo: <span className="tnum">maria@consigntrack.test</span> / consignor123
-      </p>
     </form>
   );
 }
@@ -135,7 +141,7 @@ function SignupForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (password.length < 6) return setError("Password must be at least 6 characters.");
+    if (password.length < 6) return setError("Use a password with at least 6 characters.");
     setLoading(true);
     const supabase = createClient();
 
@@ -149,22 +155,26 @@ function SignupForm() {
     });
     if (signUpErr) {
       setLoading(false);
-      return setError(signUpErr.message.replace(/^.*?:\s*/, ""));
+      return setError("We couldn’t create your account. Check your details or contact your administrator.");
     }
     const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (signInErr) return setError(signInErr.message);
+    if (signInErr) return setError("Your account was created, but we couldn’t sign you in. Please try signing in again.");
     router.push("/");
     router.refresh();
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      <div className="mb-5 space-y-1">
+        <h2 className="text-xl font-semibold">Create your workspace</h2>
+        <p className="text-sm text-muted-foreground">Set up an account to manage your consignment activity.</p>
+      </div>
       <div className="space-y-1.5">
-        <Label>I am a…</Label>
+        <Label>I represent</Label>
         <div className="grid grid-cols-2 gap-2">
-          <TypeCard active={type === "consignor"} onClick={() => setType("consignor")} icon={Package} title="Consignor" sub="I supply goods" />
-          <TypeCard active={type === "store_manager"} onClick={() => setType("store_manager")} icon={Store} title="Store" sub="I sell goods" />
+          <TypeCard active={type === "consignor"} onClick={() => setType("consignor")} icon={Package} title="Product business" sub="I supply products" />
+          <TypeCard active={type === "store_manager"} onClick={() => setType("store_manager")} icon={Store} title="Retail store" sub="I sell consigned products" />
         </div>
       </div>
       <div className="space-y-1.5">
@@ -172,15 +182,15 @@ function SignupForm() {
         <Input id="s-org" required value={org} onChange={(e) => setOrg(e.target.value)} placeholder={type === "consignor" ? "e.g. Maria's Weaves" : "e.g. Kultura — SM Aura"} />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="s-name">Your name</Label>
+        <Label htmlFor="s-name">Full name</Label>
         <Input id="s-name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="s-email">Email</Label>
+        <Label htmlFor="s-email">Work email</Label>
         <Input id="s-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="s-password">Password</Label>
+        <Label htmlFor="s-password">Create password</Label>
         <Input id="s-password" type="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
       {error ? <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
@@ -188,7 +198,7 @@ function SignupForm() {
         {loading ? "Creating account…" : "Create account"}
       </Button>
       <p className="text-center text-xs text-muted-foreground">
-        Store staff &amp; admin accounts are provisioned by a store manager.
+        Store staff and administrator accounts are set up by an authorized manager.
       </p>
     </form>
   );

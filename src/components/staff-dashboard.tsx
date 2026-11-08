@@ -22,15 +22,17 @@ export async function StaffDashboard({ storeId, name }: { storeId: string; name:
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl">Hi {name.split(" ")[0]} 👋</h1>
-        <p className="text-sm text-muted-foreground">Your tasks for today.</p>
+        <h1 className="text-2xl">Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
+          Welcome back, {name.split(" ")[0]}. Here are today&rsquo;s tasks and quick actions.
+        </p>
       </div>
 
-      {/* Big quick actions — one-handed on a phone */}
+      {/* Quick actions — optimised for one-handed use on a phone */}
       <div className="grid grid-cols-3 gap-3">
-        <QuickAction href="/store/scan" icon={ScanLine} label="Scan" primary />
-        <QuickAction href="/store/sales" icon={ShoppingCart} label="Sell" />
-        <QuickAction href="/store/returns" icon={RotateCcw} label="Return" />
+        <QuickAction href="/store/scan" icon={ScanLine} label="Scan items" primary />
+        <QuickAction href="/store/sales" icon={ShoppingCart} label="Record sale" />
+        <QuickAction href="/store/returns" icon={RotateCcw} label="Record return" />
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -48,7 +50,7 @@ export async function StaffDashboard({ storeId, name }: { storeId: string; name:
         </CardHeader>
         <CardContent>
           {inboundRows.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">Nothing inbound. You’re all caught up.</p>
+            <p className="py-4 text-center text-sm text-muted-foreground">No inbound items are awaiting receipt.</p>
           ) : (
             <ul className="divide-y divide-border">
               {inboundRows.map((i) => (

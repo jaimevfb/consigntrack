@@ -57,7 +57,7 @@ export default async function StoreReturnsPage() {
       <div>
         <h1 className="text-2xl">Returns</h1>
         <p className="text-sm text-muted-foreground">
-          Returning unsold stock reduces on-hand but never reverses recorded sales (BR6).
+          Record unsold products returned to a consignor. Completed sales remain in the sales record.
         </p>
       </div>
 
@@ -94,7 +94,7 @@ export default async function StoreReturnsPage() {
                 {recent.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                      No returns yet.
+                      No returns have been recorded yet.
                     </TableCell>
                   </TableRow>
                 ) : null}

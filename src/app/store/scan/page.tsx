@@ -8,9 +8,9 @@ export default async function StoreScanPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl">Scan</h1>
+        <h1 className="text-2xl">Scan items</h1>
         <p className="text-sm text-muted-foreground">
-          Pick an action, then scan the item’s QR (or type its code). Receiving requires a valid dispatch scan first.
+          Select an action, then scan the item&rsquo;s QR code or enter its code manually. Receiving requires a prior dispatch scan.
         </p>
       </div>
       <ScanPanel actions={scanActions(perspective)} />

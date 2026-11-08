@@ -62,13 +62,13 @@ export default async function AdminPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl">Admin overview</h1>
-        <p className="text-sm text-muted-foreground">Ledger integrity, anomalies, and the change audit trail.</p>
+        <h1 className="text-2xl">System overview</h1>
+        <p className="text-sm text-muted-foreground">Monitor platform activity, data consistency, and operational exceptions.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiTile icon={Coins} label="GMV" hint="Last 30 days" value={formatPHP(adminA.gmv30)} delta={adminA.deltaPct} />
-        <KpiTile icon={Activity} label="Ledger movements" hint="Append-only entries" value={formatNumber(adminA.movements)} />
+        <KpiTile icon={Coins} label="Gross sales" hint="Last 30 days" value={formatPHP(adminA.gmv30)} delta={adminA.deltaPct} />
+        <KpiTile icon={Activity} label="Inventory events" hint="Traceable activity records" value={formatNumber(adminA.movements)} />
         <StatTile label="Consignors / Stores" value={`${formatNumber(consignorCount ?? 0)} / ${formatNumber(storeCount ?? 0)}`} hint={`${formatNumber(agreementCount ?? 0)} active agreements`} />
         <StatTile
           label="Open discrepancies"
@@ -80,12 +80,12 @@ export default async function AdminPage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">System GMV</CardTitle>
+            <CardTitle className="text-base">Daily gross sales trend</CardTitle>
             <span className="text-xs text-muted-foreground">Last 14 days</span>
           </div>
           <div className="mt-3 flex gap-6">
-            <MiniStat label="GMV" value={formatPHP(adminA.gmv30)} />
-            <MiniStat label="Units" value={formatNumber(adminA.units30)} />
+            <MiniStat label="Gross sales (30d)" value={formatPHP(adminA.gmv30)} />
+            <MiniStat label="Units sold (30d)" value={formatNumber(adminA.units30)} />
           </div>
         </CardHeader>
         <CardContent>
@@ -94,7 +94,7 @@ export default async function AdminPage() {
       </Card>
 
       <CustodySummary counts={itemCounts} itemsHref="/admin/items" />
-      <AlertsPanel alerts={alerts} title="System alerts & discrepancies" />
+      <AlertsPanel alerts={alerts} title="System alerts and discrepancies" />
 
       <Card>
         <CardHeader>
@@ -104,13 +104,13 @@ export default async function AdminPage() {
             ) : (
               <AlertTriangle className="h-4 w-4 text-warn-foreground" />
             )}
-            Stock reconciliation (BR5)
+            Inventory reconciliation
           </CardTitle>
         </CardHeader>
         <CardContent>
           {reconciled ? (
             <p className="text-sm text-ok-foreground">
-              Reconciled — every stock level equals the sum of its movements. Zero mismatches.
+              Inventory records are consistent. Every on-hand quantity matches its recorded activity.
             </p>
           ) : (
             <Table>
@@ -118,9 +118,9 @@ export default async function AdminPage() {
                 <TableRow>
                   <TableHead>Product</TableHead>
                   <TableHead>Store</TableHead>
-                  <TableHead className="text-right">stock_levels</TableHead>
-                  <TableHead className="text-right">Σ movements</TableHead>
-                  <TableHead className="text-right">Diff</TableHead>
+                  <TableHead className="text-right">Recorded on hand</TableHead>
+                  <TableHead className="text-right">Calculated on hand</TableHead>
+                  <TableHead className="text-right">Difference</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -142,16 +142,16 @@ export default async function AdminPage() {
       <div className="grid gap-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Price &amp; commission audit (BR8)</CardTitle>
+            <CardTitle className="text-base">Price and commission changes</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>When</TableHead>
-                  <TableHead>Entity</TableHead>
+                  <TableHead>Date and time</TableHead>
+                  <TableHead>Record</TableHead>
                   <TableHead>Field</TableHead>
-                  <TableHead className="text-right">Old → New</TableHead>
+                  <TableHead className="text-right">Previous and updated values</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -160,8 +160,8 @@ export default async function AdminPage() {
                     <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                       {formatDateTime(a.created_at)}
                     </TableCell>
-                    <TableCell className="text-sm">{a.table_name}</TableCell>
-                    <TableCell className="text-sm">{a.field}</TableCell>
+                    <TableCell className="text-sm capitalize">{formatAuditLabel(a.table_name)}</TableCell>
+                    <TableCell className="text-sm capitalize">{formatAuditLabel(a.field)}</TableCell>
                     <TableCell className="tnum text-right text-sm">
                       {a.old_value ?? "—"} → {a.new_value ?? "—"}
                     </TableCell>
@@ -181,4 +181,8 @@ export default async function AdminPage() {
       </div>
     </div>
   );
+}
+
+function formatAuditLabel(value: string) {
+  return value.replace(/_/g, " ");
 }

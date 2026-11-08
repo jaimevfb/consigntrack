@@ -88,7 +88,7 @@ export function SaleEntry({ storeId, items }: { storeId: string; items: Sellable
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="h-11 pl-9 text-base"
-            placeholder="Search item, SKU, or consignor…"
+            placeholder="Search by product, SKU, or consignor…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search sellable items"
@@ -116,8 +116,8 @@ export function SaleEntry({ storeId, items }: { storeId: string; items: Sellable
                 <div className="mt-2 flex items-center justify-between">
                   <span className="tnum text-sm font-medium">{formatPHP(i.price)}</span>
                   <span className="tnum text-xs text-muted-foreground">
-                    {inCart > 0 ? `${inCart} in cart · ` : ""}
-                    {i.onHand} left
+                    {inCart > 0 ? `${inCart} in sale · ` : ""}
+                    {i.onHand} available
                   </span>
                 </div>
               </button>
@@ -125,7 +125,7 @@ export function SaleEntry({ storeId, items }: { storeId: string; items: Sellable
           })}
           {filtered.length === 0 ? (
             <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
-              No sellable stock matches. Confirm a delivery first.
+              No products match. Receive a delivery to add sellable stock.
             </p>
           ) : null}
         </div>
@@ -136,7 +136,7 @@ export function SaleEntry({ storeId, items }: { storeId: string; items: Sellable
         <Card className="lg:sticky lg:top-20">
           <CardContent className="space-y-3 pt-5">
             <div className="flex items-center justify-between">
-              <h2 className="font-serif text-lg font-semibold">Current sale</h2>
+              <h2 className="text-lg font-semibold">Current sale</h2>
               {count > 0 ? (
                 <button
                   className="text-xs text-muted-foreground hover:text-foreground"
@@ -149,7 +149,7 @@ export function SaleEntry({ storeId, items }: { storeId: string; items: Sellable
 
             {cartLines.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
-                {done ? "Sale recorded. Ready for the next one." : "Tap items to add them."}
+                {done ? "Sale recorded. You can begin the next transaction." : "Select products to add them to this sale."}
               </p>
             ) : (
               <ul className="divide-y divide-border">

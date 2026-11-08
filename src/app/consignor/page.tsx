@@ -49,7 +49,7 @@ export default async function ConsignorDashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Your consignments across all stores.</p>
+          <p className="text-sm text-muted-foreground">A summary of product performance, inventory, and settlement balances.</p>
         </div>
         <Button asChild variant="outline" size="sm">
           <Link href="/consignor/analytics">
@@ -60,9 +60,9 @@ export default async function ConsignorDashboardPage() {
 
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiTile icon={Coins} label="Sold" hint="Last 30 days" value={formatPHP(analytics.tiles.gross30)} delta={analytics.tiles.deltaPct} />
+        <KpiTile icon={Coins} label="Gross sales" hint="Last 30 days" value={formatPHP(analytics.tiles.gross30)} delta={analytics.tiles.deltaPct} />
         <KpiTile icon={Package} label="Items on hand" hint="Across all stores" value={formatNumber(dash.tiles.onHand)} />
-        <KpiTile icon={Wallet} label="Net owed" hint="Unconfirmed settlements" value={formatPHP(dash.tiles.netOwed)} tone="ok" />
+        <KpiTile icon={Wallet} label="Net payable" hint="Pending settlement confirmation" value={formatPHP(dash.tiles.netOwed)} tone="ok" />
         <KpiTile
           icon={AlertCircle}
           label="Overdue"
@@ -77,13 +77,13 @@ export default async function ConsignorDashboardPage() {
         <Card className="lg:col-span-2">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Sales analytics</CardTitle>
+              <CardTitle className="text-base">Daily sales trend</CardTitle>
               <span className="text-xs text-muted-foreground">Last 14 days</span>
             </div>
             <div className="mt-3 flex gap-6">
-              <MiniStat label="Gross" value={formatPHP(analytics.tiles.gross30)} />
-              <MiniStat label="Units" value={formatNumber(analytics.tiles.units30)} />
-              <MiniStat label="Avg. order" value={formatPHP(analytics.tiles.avgOrder)} />
+              <MiniStat label="Gross sales (30d)" value={formatPHP(analytics.tiles.gross30)} />
+              <MiniStat label="Units sold (30d)" value={formatNumber(analytics.tiles.units30)} />
+              <MiniStat label="Average sale (30d)" value={formatPHP(analytics.tiles.avgOrder)} />
             </div>
           </CardHeader>
           <CardContent>
@@ -92,7 +92,7 @@ export default async function ConsignorDashboardPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Settlement economics</CardTitle>
+            <CardTitle className="text-base">Settlement summary</CardTitle>
             <p className="text-xs text-muted-foreground">All statements to date</p>
           </CardHeader>
           <CardContent>
@@ -107,7 +107,7 @@ export default async function ConsignorDashboardPage() {
                 ]}
               />
             ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">No settlements generated yet.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">Settlement totals will appear here after the first statement is generated.</p>
             )}
           </CardContent>
         </Card>
@@ -137,7 +137,7 @@ export default async function ConsignorDashboardPage() {
                 <TableRow>
                   <TableHead>Store</TableHead>
                   <TableHead className="text-right">On hand</TableHead>
-                  <TableHead className="text-right">Owed</TableHead>
+                      <TableHead className="text-right">Net payable</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -157,7 +157,7 @@ export default async function ConsignorDashboardPage() {
                 {dash.stores.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
-                      No active store agreements yet.
+                      No active store relationships yet.
                     </TableCell>
                   </TableRow>
                 ) : null}

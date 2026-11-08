@@ -56,7 +56,7 @@ export default async function StoreSettlementsPage() {
       <div>
         <h1 className="text-2xl">Settlements</h1>
         <p className="text-sm text-muted-foreground">
-          Statements auto-compute gross − commission − returns (BR3). Mark paid; the consignor confirms receipt (BR7).
+          Generate settlement statements for a reporting period. Confirm payment after funds are sent; the consignor can then acknowledge receipt.
         </p>
       </div>
 
@@ -109,7 +109,7 @@ export default async function StoreSettlementsPage() {
                 {rows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
-                      No statements yet. Generate one from an agreement.
+                      No settlement statements have been generated. Select an active business agreement to create one.
                     </TableCell>
                   </TableRow>
                 ) : null}

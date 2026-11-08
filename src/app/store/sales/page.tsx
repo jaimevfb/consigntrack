@@ -56,9 +56,9 @@ export default async function StoreSalesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl">Record a sale</h1>
-          <p className="text-sm text-muted-foreground">Tap items to build the sale, then record it.</p>
+          <p className="text-sm text-muted-foreground">Select products and quantities, then save the transaction to the shared record.</p>
         </div>
-        <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline" size="sm">
           <Link href="/store/sales/import">
             <Upload className="h-4 w-4" /> Import CSV / POS
           </Link>

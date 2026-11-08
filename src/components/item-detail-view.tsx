@@ -65,7 +65,7 @@ export function ItemDetailView({
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">Proof of custody</CardTitle>
-            <p className="text-xs text-muted-foreground">Every scan, append-only. This is the audit trail.</p>
+            <p className="text-xs text-muted-foreground">A complete, append-only record of every scan.</p>
           </CardHeader>
           <CardContent>
             <CustodyTimeline events={events} />

@@ -55,7 +55,7 @@ export default async function StoreDeliveriesPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {toReceive.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nothing to receive right now.</p>
+            <p className="text-sm text-muted-foreground">There are no items awaiting receipt.</p>
           ) : (
             toReceive.map((d) => (
               <div key={d.id} className="flex flex-wrap items-start justify-between gap-4 rounded-lg border border-border p-4">

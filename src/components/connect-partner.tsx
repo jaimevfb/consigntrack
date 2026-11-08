@@ -65,7 +65,7 @@ export function ConnectPartner({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Connect a {partnerNoun}</CardTitle>
-            <p className="text-xs text-muted-foreground">Create an active agreement and start transacting right away.</p>
+            <p className="text-xs text-muted-foreground">Create an active agreement to begin transacting with this partner.</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={submit} className="grid gap-4 sm:grid-cols-3">
@@ -133,7 +133,7 @@ export function ConnectPartner({
                 </TableRow>
               ))}
               {existing.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground">No partners yet — connect one to begin.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground">No partners yet. Connect one to begin.</TableCell></TableRow>
               ) : null}
             </TableBody>
           </Table>

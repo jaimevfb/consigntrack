@@ -94,11 +94,13 @@
     background-color: var(--background);
     color: var(--foreground);
     font-feature-settings: "ss01", "cv01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   h1, h2, h3, h4 {
-    font-family: theme("fontFamily.serif");
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-family: theme("fontFamily.sans");
+    font-weight: 650;
+    letter-spacing: -0.025em;
   }
   /* Tabular figures for all ledger numbers. */
   .tnum {

@@ -40,26 +40,26 @@ export default async function StoreDashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Every consignor you carry, in one ledger.</p>
+          <p className="text-sm text-muted-foreground">A summary of store activity, inventory, and consignor settlements.</p>
         </div>
         <div className="flex gap-2">
           {isManager ? (
             <Button asChild variant="outline" size="sm">
               <Link href="/store/analytics">
-                Analytics <ArrowUpRight className="h-4 w-4" />
+                View analytics <ArrowUpRight className="h-4 w-4" />
               </Link>
             </Button>
           ) : null}
           <Button asChild size="sm">
             <Link href="/store/sales">
-              <ShoppingCart className="h-4 w-4" /> Record a sale
+              <ShoppingCart className="h-4 w-4" /> Record sale
             </Link>
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiTile icon={Coins} label="Sold" hint="Last 30 days" value={formatPHP(analytics.tiles.gross30)} delta={analytics.tiles.deltaPct} />
+        <KpiTile icon={Coins} label="Gross sales" hint="Last 30 days" value={formatPHP(analytics.tiles.gross30)} delta={analytics.tiles.deltaPct} />
         <KpiTile icon={Users} label="Consignors" hint="Active agreements" value={formatNumber(dash.tiles.consignors)} />
         <KpiTile icon={Package} label="Items on hand" hint="All consignors" value={formatNumber(dash.tiles.onHand)} />
         <KpiTile
@@ -75,13 +75,13 @@ export default async function StoreDashboardPage() {
         <Card className="lg:col-span-2">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Sales analytics</CardTitle>
+              <CardTitle className="text-base">Daily sales trend</CardTitle>
               <span className="text-xs text-muted-foreground">Last 14 days</span>
             </div>
             <div className="mt-3 flex gap-6">
-              <MiniStat label="Gross" value={formatPHP(analytics.tiles.gross30)} />
-              <MiniStat label="Units" value={formatNumber(analytics.tiles.units30)} />
-              <MiniStat label="Avg. order" value={formatPHP(analytics.tiles.avgOrder)} />
+              <MiniStat label="Gross sales (30d)" value={formatPHP(analytics.tiles.gross30)} />
+              <MiniStat label="Units sold (30d)" value={formatNumber(analytics.tiles.units30)} />
+              <MiniStat label="Average sale (30d)" value={formatPHP(analytics.tiles.avgOrder)} />
             </div>
           </CardHeader>
           <CardContent>
@@ -96,7 +96,7 @@ export default async function StoreDashboardPage() {
             {analytics.mix.some((m) => m.value > 0) ? (
               <Donut segments={analytics.mix.map((m) => ({ label: `${m.label} · ${formatPHP(m.value)}`, value: m.value }))} centerLabel="carried" centerValue={String(dash.tiles.consignors)} />
             ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">No sales yet.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">Sales by consignor will appear here once recorded.</p>
             )}
           </CardContent>
         </Card>
@@ -113,7 +113,7 @@ export default async function StoreDashboardPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">On hand by consignor</CardTitle>
+            <CardTitle className="text-base">Inventory by consignor</CardTitle>
           </CardHeader>
           <CardContent>
             <RankedBars

@@ -15,19 +15,19 @@ export default async function StoreAnalyticsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl">Analytics</h1>
-        <p className="text-sm text-muted-foreground">{a.windowLabel} · sales, products, and consignor mix.</p>
+        <p className="text-sm text-muted-foreground">Sales performance, product activity, and consignor mix for {a.windowLabel.toLowerCase()}.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile label="Gross sales" value={formatPHP(a.tiles.gross30)} />
         <Tile label="Units sold" value={formatNumber(a.tiles.units30)} />
         <Tile label="Orders" value={formatNumber(a.tiles.orders30)} />
-        <Tile label="Avg. order value" value={formatPHP(a.tiles.avgOrder)} />
+        <Tile label="Average sale value" value={formatPHP(a.tiles.avgOrder)} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Sales trend — last 14 days</CardTitle>
+            <CardTitle className="text-base">Daily gross sales · last 14 days</CardTitle>
         </CardHeader>
         <CardContent>
           <AreaTrend points={a.series} height={220} valueLabel={formatPHP} />
@@ -45,13 +45,13 @@ export default async function StoreAnalyticsPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Revenue by consignor</CardTitle>
+            <CardTitle className="text-base">Gross sales by consignor</CardTitle>
           </CardHeader>
           <CardContent>
             {a.mix.some((m) => m.value > 0) ? (
               <Donut segments={a.mix.map((m) => ({ label: `${m.label} · ${formatPHP(m.value)}`, value: m.value }))} centerLabel="consignors" centerValue={String(a.mix.length)} />
             ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">No sales yet.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">Consignor sales totals will appear here when sales are recorded.</p>
             )}
           </CardContent>
         </Card>

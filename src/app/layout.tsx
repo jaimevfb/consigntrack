@@ -3,9 +3,12 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: "ConsignTrack",
+  title: {
+    default: "ConsignTrack | Consignment operations",
+    template: "%s | ConsignTrack",
+  },
   description:
-    "A shared consignment inventory and settlement ledger for Philippine MSME retail.",
+    "A shared operations platform for consignment inventory, sales, and settlement records.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

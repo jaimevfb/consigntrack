@@ -34,7 +34,7 @@ export function AlertsPanel({ alerts, title = "Alerts & discrepancies" }: { aler
         </div>
         {total === 0 ? (
           <p className="py-4 text-center text-sm text-muted-foreground">
-            All clear — no discrepancies, aged stock, or overdue settlements.
+            No active alerts. There are no discrepancies, aged stock, or overdue settlements.
           </p>
         ) : (
           <ul className="divide-y divide-border">
