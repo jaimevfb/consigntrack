@@ -104,6 +104,17 @@ export function ItemDetailView({
               <Row label="Condition" value={item.condition ?? "—"} />
               <Row label="Holder" value={<span className="capitalize">{item.current_holder}</span>} />
               <Row label="Created" value={formatDate(item.created_at)} />
+              {item.display_expires_at && ["received_confirmed", "listed"].includes(item.status) ? (
+                <Row
+                  label="Display until"
+                  value={
+                    <span className={new Date(item.display_expires_at) < new Date() ? "text-destructive" : undefined}>
+                      {formatDate(item.display_expires_at)}
+                      {new Date(item.display_expires_at) < new Date() ? " · period ended" : ""}
+                    </span>
+                  }
+                />
+              ) : null}
               {item.sold_at ? <Row label="Sold" value={formatDate(item.sold_at)} /> : null}
               {item.buyer_ref ? <Row label="Buyer" value={item.buyer_ref} /> : null}
             </CardContent>

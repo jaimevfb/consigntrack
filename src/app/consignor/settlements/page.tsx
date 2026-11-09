@@ -21,6 +21,7 @@ export default async function ConsignorSettlementsPage() {
     gross_sales: number;
     commission: number;
     returns_total: number;
+    damage_total: number;
     net_payable: number;
     status: string;
     agreements: { stores: { name: string } | null } | null;
@@ -46,6 +47,7 @@ export default async function ConsignorSettlementsPage() {
                 <TableHead className="text-right">Gross</TableHead>
                 <TableHead className="text-right">Commission</TableHead>
                 <TableHead className="text-right">Returns</TableHead>
+                <TableHead className="text-right">Damage</TableHead>
                 <TableHead className="text-right">Net payable</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Action</TableHead>
@@ -67,6 +69,9 @@ export default async function ConsignorSettlementsPage() {
                     </TableCell>
                     <TableCell className="tnum text-right text-muted-foreground">
                       −{formatPHP(s.returns_total)}
+                    </TableCell>
+                    <TableCell className="tnum text-right text-muted-foreground">
+                      −{formatPHP(s.damage_total)}
                     </TableCell>
                     <TableCell className="tnum text-right font-medium">{formatPHP(s.net_payable)}</TableCell>
                     <TableCell>
@@ -90,7 +95,7 @@ export default async function ConsignorSettlementsPage() {
               })}
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
                     No settlements yet.
                   </TableCell>
                 </TableRow>

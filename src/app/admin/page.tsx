@@ -7,6 +7,7 @@ import { CustodySummary } from "@/components/custody-summary";
 import { StatTile } from "@/components/stat-tile";
 import { KpiTile, MiniStat } from "@/components/kpi-tile";
 import { AlertsPanel } from "@/components/alerts-panel";
+import { PeriodMaintenanceButton } from "@/components/period-maintenance-button";
 import { AreaTrend } from "@/components/charts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -61,9 +62,12 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl">System overview</h1>
-        <p className="text-sm text-muted-foreground">Monitor platform activity, data consistency, and operational exceptions.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl">System overview</h1>
+          <p className="text-sm text-muted-foreground">Monitor platform activity, data consistency, and operational exceptions.</p>
+        </div>
+        <PeriodMaintenanceButton />
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

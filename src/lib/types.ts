@@ -151,6 +151,8 @@ export interface Item {
   sale_price: number | null;
   sold_at: string | null;
   buyer_ref: string | null;
+  display_expires_at: string | null;
+  delivery_id: string | null;
   created_at: string;
   updated_at: string;
 }

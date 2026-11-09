@@ -13,7 +13,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StatusPill } from "@/components/status-pill";
 
 interface Partner { id: string; name: string }
-export interface ExistingAgreement { partnerName: string; commission_pct: number; cadence: string; active: boolean }
+export interface ExistingAgreement {
+  partnerName: string;
+  commission_pct: number;
+  cadence: string;
+  active: boolean;
+  periodDays?: number;
+  liability?: "consignor" | "store" | "shared";
+  endOfPeriod?: "return" | "extend" | "discount";
+}
 
 export function ConnectPartner({
   perspective,
@@ -34,6 +42,10 @@ export function ConnectPartner({
   const [partnerId, setPartnerId] = React.useState(available[0]?.id ?? "");
   const [pct, setPct] = React.useState("15");
   const [cad, setCad] = React.useState("monthly");
+  const [liability, setLiability] = React.useState("consignor");
+  const [share, setShare] = React.useState("50");
+  const [period, setPeriod] = React.useState("60");
+  const [eop, setEop] = React.useState("return");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [ok, setOk] = React.useState(false);
@@ -51,6 +63,10 @@ export function ConnectPartner({
       store_id: perspective === "consignee" ? selfId : partnerId,
       commission_pct: Number(pct),
       cadence: cad,
+      damage_liability: liability,
+      damage_store_share_pct: Number(share),
+      consignment_period_days: Number(period),
+      end_of_period_action: eop,
     });
     setBusy(false);
     if (!res.ok) return setError(res.error);
@@ -87,7 +103,39 @@ export function ConnectPartner({
                 <Select value={cad} onValueChange={setCad}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {["weekly", "monthly", "quarterly"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    {["weekly", "monthly", "quarterly"].map((c) => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Damage liability</Label>
+                <Select value={liability} onValueChange={setLiability}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="consignor">Consignor absorbs loss</SelectItem>
+                    <SelectItem value="store">Store absorbs loss</SelectItem>
+                    <SelectItem value="shared">Shared loss</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {liability === "shared" ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="cshare">Store&rsquo;s share of loss %</Label>
+                  <Input id="cshare" type="number" value={share} onChange={(e) => setShare(e.target.value)} />
+                </div>
+              ) : null}
+              <div className="space-y-1.5">
+                <Label htmlFor="cperiod">Consignment period (days)</Label>
+                <Input id="cperiod" type="number" value={period} onChange={(e) => setPeriod(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>When the period ends</Label>
+                <Select value={eop} onValueChange={setEop}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="return">Return to consignor</SelectItem>
+                    <SelectItem value="extend">Auto-extend window</SelectItem>
+                    <SelectItem value="discount">Auto-discount &amp; extend</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -120,6 +168,7 @@ export function ConnectPartner({
                 <TableHead className="capitalize">{partnerNoun}</TableHead>
                 <TableHead className="text-right">Commission</TableHead>
                 <TableHead>Cadence</TableHead>
+                <TableHead>Terms</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -129,11 +178,16 @@ export function ConnectPartner({
                   <TableCell className="font-medium">{a.partnerName}</TableCell>
                   <TableCell className="tnum text-right">{a.commission_pct}%</TableCell>
                   <TableCell className="capitalize">{a.cadence}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {a.periodDays ? `${a.periodDays}d` : "—"}
+                    {a.liability ? ` · ${a.liability === "shared" ? "shared" : a.liability + "-liable"}` : ""}
+                    {a.endOfPeriod ? ` · ${a.endOfPeriod}` : ""}
+                  </TableCell>
                   <TableCell><StatusPill tone={a.active ? "ok" : "neutral"}>{a.active ? "Active" : "Inactive"}</StatusPill></TableCell>
                 </TableRow>
               ))}
               {existing.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground">No partners yet. Connect one to begin.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground">No partners yet. Connect one to begin.</TableCell></TableRow>
               ) : null}
             </TableBody>
           </Table>

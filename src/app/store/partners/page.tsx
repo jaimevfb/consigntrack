@@ -9,15 +9,18 @@ export default async function StorePartnersPage() {
   if (profile.role === "store_staff") redirect("/store");
   const supabase = createClient();
   const [{ data: ags }, { data: dir }] = await Promise.all([
-    supabase.from("agreements").select("consignor_id, commission_pct, settlement_cadence, is_active, consignors(name)").eq("store_id", profile.store_id),
+    supabase.from("agreements").select("consignor_id, commission_pct, settlement_cadence, is_active, consignment_period_days, damage_liability, end_of_period_action, consignors(name)").eq("store_id", profile.store_id),
     supabase.rpc("partner_directory", { p_kind: "consignor" }),
   ]);
-  const agreements = (ags ?? []) as unknown as Array<{ consignor_id: string; commission_pct: number; settlement_cadence: string; is_active: boolean; consignors: { name: string } | null }>;
+  const agreements = (ags ?? []) as unknown as Array<{ consignor_id: string; commission_pct: number; settlement_cadence: string; is_active: boolean; consignment_period_days: number; damage_liability: "consignor" | "store" | "shared"; end_of_period_action: "return" | "extend" | "discount"; consignors: { name: string } | null }>;
   const existing: ExistingAgreement[] = agreements.map((a) => ({
     partnerName: a.consignors?.name ?? "—",
     commission_pct: a.commission_pct,
     cadence: a.settlement_cadence,
     active: a.is_active,
+    periodDays: a.consignment_period_days,
+    liability: a.damage_liability,
+    endOfPeriod: a.end_of_period_action,
   }));
 
   return (
