@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { FileText } from "lucide-react";
-import { generateSettlement } from "@/app/_actions/ledger";
+import { generateLedgerSettlement } from "@/app/_actions/ledger-ops";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,11 +44,7 @@ export function GenerateSettlementForm({ agreements }: { agreements: AgreementOp
       return;
     }
     setSaving(true);
-    const res = await generateSettlement({
-      agreement_id: agreementId,
-      period_start: start,
-      period_end: end,
-    });
+    const res = await generateLedgerSettlement(agreementId, start, end);
     setSaving(false);
     if (!res.ok) {
       setError(res.error);

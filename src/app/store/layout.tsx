@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { AppShell } from "@/components/app-shell";
 import { createClient } from "@/lib/supabase/server";
-import { getAlerts } from "@/lib/data";
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireProfile();
@@ -10,35 +9,31 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     redirect("/");
   }
 
+  const supabase = createClient();
   let scopeLabel = profile.role === "store_staff" ? "Store staff" : "Store manager";
+  let incoming = 0;
   if (profile.store_id) {
-    const supabase = createClient();
-    const { data } = await supabase.from("stores").select("name").eq("id", profile.store_id).maybeSingle();
-    if (data?.name) scopeLabel = data.name;
+    const [{ data: store }, { count }] = await Promise.all([
+      supabase.from("stores").select("name").eq("id", profile.store_id).maybeSingle(),
+      supabase.from("packages").select("id", { count: "exact", head: true }).eq("consignee_id", profile.store_id).eq("status", "IN_TRANSIT"),
+    ]);
+    if (store?.name) scopeLabel = store.name;
+    incoming = count ?? 0;
   }
 
   const isManager = profile.role === "store_manager" || profile.role === "admin";
   const nav = [
     { href: "/store", label: "Dashboard", icon: "dashboard" },
-    ...(isManager ? [{ href: "/store/analytics", label: "Analytics", icon: "analytics" }] : []),
-    { href: "/store/catalog", label: "Catalog", icon: "catalog" },
-    { href: "/store/scan", label: "Scan items", icon: "scan" },
-    { href: "/store/items", label: "Item records", icon: "items" },
+    { href: "/store/deliveries", label: "Deliveries & Receiving", icon: "deliveries" },
     { href: "/store/sales", label: "Sales", icon: "sell" },
-    { href: "/store/deliveries", label: "Deliveries", icon: "deliveries" },
-    { href: "/store/inventory", label: "Inventory", icon: "inventory" },
-    { href: "/store/returns", label: "Returns", icon: "returns" },
+    { href: "/store/inventory", label: "Inventory & Catalog", icon: "inventory" },
     ...(isManager
       ? [
-          { href: "/store/partners", label: "Business partners", icon: "agreements" },
-          { href: "/store/settlements", label: "Settlements", icon: "settlements" },
-          { href: "/store/reports", label: "Reports", icon: "reports" },
+          { href: "/store/returns", label: "Returns", icon: "returns" },
+          { href: "/store/settlements", label: "Partners & Settlements", icon: "settlements" },
         ]
       : []),
   ];
-
-  const alerts = await getAlerts();
-  const alertCount = alerts.counts.overdue + alerts.counts.discrepancies + alerts.counts.aged + alerts.counts.low;
 
   return (
     <AppShell
@@ -46,8 +41,8 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       userName={profile.full_name}
       scopeLabel={scopeLabel}
       nav={nav}
-      alertCount={alertCount}
-      alertHref="/store"
+      alertCount={incoming}
+      alertHref="/store/deliveries"
     >
       {children}
     </AppShell>
