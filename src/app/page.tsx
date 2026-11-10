@@ -20,7 +20,7 @@ function Landing() {
       <header className="absolute inset-x-0 top-0 z-20">
         <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
           <Wordmark inverted className="text-white [&_span]:text-white" />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-7 sm:gap-10">
             <Link href="#how" className="hidden text-sm font-medium text-white/80 hover:text-white sm:block">How it works</Link>
             <Link href="#features" className="hidden text-sm font-medium text-white/80 hover:text-white sm:block">Features</Link>
             <Link href="/login" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#0F172A] transition-colors hover:bg-white/90">Log in</Link>
