@@ -21,8 +21,12 @@ import {
   Users,
   Menu,
   X,
+  Moon,
+  Sun,
+  LogOut,
+  Settings,
 } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { useTheme } from "next-themes";
 import { signOut } from "@/app/_actions/auth";
 import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/brand";
@@ -87,6 +91,45 @@ function NavList({ nav, onNavigate }: { nav: NavItem[]; onNavigate?: () => void 
   );
 }
 
+function ProfileMenu({ userName, roleLabel, initials }: { userName: string; roleLabel: string; initials: string }) {
+  const [open, setOpen] = React.useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => setMounted(true), []);
+  React.useEffect(() => {
+    function onDoc(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+  const isDark = mounted && resolvedTheme === "dark";
+
+  return (
+    <div ref={ref} className="relative border-t border-border p-3">
+      {open ? (
+        <div className="absolute bottom-full left-3 right-3 mb-2 overflow-hidden rounded-xl border border-border bg-card shadow-pop">
+          <button onClick={() => setTheme(isDark ? "light" : "dark")} className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-muted">
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />} {isDark ? "Light mode" : "Dark mode"}
+          </button>
+          <form action={signOut} className="border-t border-border">
+            <button type="submit" className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-destructive hover:bg-muted">
+              <LogOut className="h-4 w-4" /> Sign out
+            </button>
+          </form>
+        </div>
+      ) : null}
+      <button onClick={() => setOpen((v) => !v)} aria-haspopup="menu" aria-expanded={open} className="flex w-full items-center gap-3 rounded-lg p-1 text-left transition-colors hover:bg-muted">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">{initials || "U"}</span>
+        <div className="min-w-0 flex-1 text-xs text-muted-foreground">
+          <div className="truncate font-medium text-foreground">{userName}</div>
+          <div>{roleLabel}</div>
+        </div>
+        <Settings className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </button>
+    </div>
+  );
+}
+
 export function AppShell({
   role,
   scopeLabel,
@@ -125,27 +168,13 @@ export function AppShell({
             <Wordmark />
           </Link>
         </div>
-        <div className="border-b border-border px-5 py-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Consignment operations
-          </p>
-          <p className="mt-1 truncate text-sm font-medium" title={scopeLabel}>{scopeLabel}</p>
-        </div>
         <div className="flex-1 overflow-y-auto p-3">
           <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Workspace
           </p>
           <NavList nav={nav} />
         </div>
-        <div className="flex items-center gap-3 border-t border-border p-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">
-            {initials || "U"}
-          </span>
-          <div className="min-w-0 text-xs text-muted-foreground">
-            <div className="truncate font-medium text-foreground">{userName}</div>
-            <div>{roleLabel}</div>
-          </div>
-        </div>
+        <ProfileMenu userName={userName} roleLabel={roleLabel} initials={initials} />
       </aside>
 
       {/* Mobile drawer */}
@@ -171,6 +200,7 @@ export function AppShell({
               </p>
               <NavList nav={nav} onNavigate={() => setOpen(false)} />
             </div>
+            <ProfileMenu userName={userName} roleLabel={roleLabel} initials={initials} />
           </aside>
         </div>
       ) : null}
@@ -202,12 +232,6 @@ export function AppShell({
                 </span>
               ) : null}
             </Link>
-            <ThemeToggle />
-            <form action={signOut}>
-              <Button variant="outline" size="sm" type="submit">
-                Sign out
-              </Button>
-            </form>
           </div>
         </header>
         <main className="mx-auto max-w-[1400px] px-4 py-6 lg:px-6">{children}</main>

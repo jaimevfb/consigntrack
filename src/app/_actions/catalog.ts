@@ -66,3 +66,25 @@ export async function updateProduct(input: unknown): Promise<ActionResult> {
   revalidatePath("/consignor/products");
   return { ok: true };
 }
+
+/**
+ * Remove a product from the catalogue. Hard-deletes a product that was never
+ * used; if it's referenced by any stock/package/settlement history, it is
+ * archived instead so the audit trail stays intact.
+ */
+export async function removeProduct(input: unknown): Promise<ActionResult> {
+  const parsed = z.object({ id: z.string().uuid() }).safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid product" };
+  const session = await getSessionProfile();
+  if (!session?.profile.consignor_id) return { ok: false, error: "Only consignor accounts manage a catalogue." };
+  const supabase = createClient();
+  const consignorId = session.profile.consignor_id;
+
+  const { error: delErr } = await supabase.from("products").delete().eq("id", parsed.data.id).eq("consignor_id", consignorId);
+  if (delErr) {
+    const { error: arcErr } = await supabase.from("products").update({ status: "archived" }).eq("id", parsed.data.id).eq("consignor_id", consignorId);
+    if (arcErr) return { ok: false, error: arcErr.message };
+  }
+  revalidatePath("/consignor/products");
+  return { ok: true };
+}

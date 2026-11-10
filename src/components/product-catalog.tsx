@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Check, X, Package, Copy } from "lucide-react";
-import { createProduct, updateProduct } from "@/app/_actions/catalog";
+import { Plus, Pencil, Check, X, Package, Copy, Trash2 } from "lucide-react";
+import { createProduct, updateProduct, removeProduct } from "@/app/_actions/catalog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +33,17 @@ export function ProductCatalog({ products }: { products: Product[] }) {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [editId, setEditId] = React.useState<string | null>(null);
+  const [confirmId, setConfirmId] = React.useState<string | null>(null);
+  const [removingId, setRemovingId] = React.useState<string | null>(null);
   const set = (k: keyof Draft, v: string) => setDraft((d) => ({ ...d, [k]: v }));
+
+  async function remove(id: string) {
+    setRemovingId(id);
+    const res = await removeProduct({ id });
+    setRemovingId(null); setConfirmId(null);
+    if (!res.ok) { setError(res.error); return; }
+    router.refresh();
+  }
 
   async function add(e: React.FormEvent, another: boolean) {
     e.preventDefault();
@@ -90,7 +100,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Category</TableHead><TableHead>Unit</TableHead><TableHead className="text-right">Price</TableHead><TableHead className="text-right">Edit</TableHead></TableRow>
+                <TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Category</TableHead><TableHead>Unit</TableHead><TableHead className="text-right">Price</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
               </TableHeader>
               <TableBody>
                 {visible.map((p) =>
@@ -111,7 +121,20 @@ export function ProductCatalog({ products }: { products: Product[] }) {
                       <TableCell><StatusPill tone="neutral">{p.category}</StatusPill></TableCell>
                       <TableCell className="text-sm text-muted-foreground">{unitShort(p.unit_of_measure)}</TableCell>
                       <TableCell className="tnum text-right">{formatPHP(p.unit_price)}</TableCell>
-                      <TableCell className="text-right"><Button variant="ghost" size="icon" aria-label="Edit" onClick={() => setEditId(p.id)}><Pencil className="h-4 w-4" /></Button></TableCell>
+                      <TableCell className="text-right">
+                        {confirmId === p.id ? (
+                          <div className="inline-flex items-center justify-end gap-1">
+                            <span className="text-xs text-muted-foreground">Remove?</span>
+                            <Button variant="ghost" size="sm" className="text-destructive" disabled={removingId === p.id} onClick={() => remove(p.id)}>{removingId === p.id ? "Removing…" : "Yes"}</Button>
+                            <Button variant="ghost" size="sm" onClick={() => setConfirmId(null)}>No</Button>
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => setEditId(p.id)}><Pencil className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" aria-label="Remove" onClick={() => { setError(null); setConfirmId(p.id); }}><Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" /></Button>
+                          </div>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ),
                 )}
