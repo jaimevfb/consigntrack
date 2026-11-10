@@ -108,7 +108,16 @@ Final store tab map: **Dashboard · Deliveries & Receiving · Sales · Inventory
 - Negative guards: oversell **rejected**, wrong-destination receive **rejected**.
 - Receiving/sales/returns components are mobile-first (bottom-sheet modal, stacking layouts) for 375px dock use.
 
-## Follow-ups (remaining to fully close Option 1)
-1. **Migrate the consignor + admin portals to the ledger** (dashboards, inventory, deliveries→outbound packages, analytics, reconciliation, reports), then delete the serialization components and **drop the legacy tables**. This is the second half of Option 1; the consignee portal is the reference implementation to mirror.
-2. CSV/POS bulk import on Sales — currently redirects; rewire to `pos_sale` with the "rows that would go negative are rejected with the math shown" rule.
-3. Package detail page with the event-history timeline (data already available).
+## Option 1 — COMPLETE (2026-11-10)
+
+Both portals migrated; legacy tables dropped.
+- **Warehouse ledger** (`0020`): `warehouse_entries` + `v_warehouse_on_hand`; `dispatch_package` decrements warehouse (guarded), `receive_return_package` adds back. Chain Warehouse→Transit→On Hand→Sold/Return fully modeled.
+- **Consignor portal** on the ledger: Dashboard (network strip, shipment feed, leaderboard), Catalog, Shipments (builder + inbound returns), Stores & Agreements (per-store shelf stock + owed), Settlements, Insights (SKU velocity). Nav = 6 tabs. `src/lib/consignor-data.ts`.
+- **Admin** overview + **staff** dashboard rebuilt on ledger views; serialization routes redirect.
+- **Serialization deleted**: item-detail-view, item-lifecycle, custody-summary, scan-panel, items-list, alerts-panel, report-table, the item/sale/return forms, `lib/data.ts`, `lib/items-data.ts`, `_actions/items.ts`, report API routes.
+- **Legacy tables dropped** (`0021`): items, scan_events, disputes, exceptions, deliveries, delivery_items, returns, sales, sale_items, stock_levels, stock_movements + dead functions.
+- **Guardrails** (`0022`): price-deviation flag (`ledger_entries.price_flag`), settled-period lock. With the existing oversell / wrong-destination / state-machine guards, concept §5 (1–5) is covered.
+- **QR scanning restored**: scan box on Deliveries & Receiving (package code → manifest), SKU scan in Sales, RET scan in inbound returns.
+
+## Remaining — the automation layer (concept §4, sequenced last, ships independently)
+Velocity reorder drafts (days-of-cover), aging countdown + auto-markdown, dispute SLA escrow, full payment matching (amount vs statement), micro cycle counts, idempotent-scan keys + offline queue, magic-link store access, agreement versioning ("rate at event time"), dispute-thread UI, package event-history page (data already in `getPackageDetail`), CSV/POS bulk import rewired to `pos_sale`.
