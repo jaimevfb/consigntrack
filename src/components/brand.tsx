@@ -1,23 +1,29 @@
 import { cn } from "@/lib/utils";
 
 /**
- * ConsignTrack mark — a ledger card (rounded square) holding two entry rows and
- * a settlement "coin", with a subtle upward notch: records in, value out.
- * Uses currentColor so it inherits the ledger-green accent and themes cleanly.
+ * ConsignTrack mark — a scan viewfinder locked onto a package: the app's core
+ * act (scan to track stock). Gradient tile, white glyph; inverts to a white
+ * tile with a primary glyph on coloured backgrounds.
  */
 export function Mark({ className, inverted = false }: { className?: string; inverted?: boolean }) {
-  const card = inverted ? "var(--primary-foreground)" : "currentColor";
-  const glyph = inverted ? "var(--primary)" : "var(--primary-foreground)";
-  const notch = inverted ? "var(--primary-foreground)" : "currentColor";
+  const tile = inverted ? "var(--primary-foreground)" : "url(#ctmark)";
+  const glyph = inverted ? "var(--primary)" : "#ffffff";
   return (
     <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden role="img">
-      <rect x="2" y="2" width="28" height="28" rx="7" fill={card} />
-      {/* ledger rows */}
-      <rect x="8" y="11" width="13" height="2.6" rx="1.3" fill={glyph} opacity="0.95" />
-      <rect x="8" y="16.7" width="9" height="2.6" rx="1.3" fill={glyph} opacity="0.75" />
-      {/* settlement coin */}
-      <circle cx="22.5" cy="20.5" r="3.2" fill={glyph} />
-      <path d="M22.5 18.9v3.2M21.2 20.5h2.6" stroke={notch} strokeWidth="1" strokeLinecap="round" />
+      <defs>
+        <linearGradient id="ctmark" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#3B82F6" />
+          <stop offset="1" stopColor="#4F46E5" />
+        </linearGradient>
+      </defs>
+      <rect x="2" y="2" width="28" height="28" rx="8.5" fill={tile} />
+      <g stroke={glyph} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" fill="none">
+        <path d="M8.5 12V10.2A1.7 1.7 0 0 1 10.2 8.5H12" />
+        <path d="M20 8.5h1.8A1.7 1.7 0 0 1 23.5 10.2V12" />
+        <path d="M8.5 20v1.8A1.7 1.7 0 0 0 10.2 23.5H12" />
+        <path d="M20 23.5h1.8A1.7 1.7 0 0 0 23.5 21.8V20" />
+      </g>
+      <rect x="13" y="13" width="6" height="6" rx="1.7" fill={glyph} />
     </svg>
   );
 }
