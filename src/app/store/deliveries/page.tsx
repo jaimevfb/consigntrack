@@ -1,7 +1,10 @@
+import Link from "next/link";
+import { ScanLine } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getStorePackages } from "@/lib/ledger-data";
 import { ReceivingPanel, type AwaitingPackage, type HistoryRow } from "@/components/receiving-panel";
+import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Deliveries & Receiving" };
 
@@ -34,9 +37,12 @@ export default async function StoreDeliveriesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl">Deliveries &amp; Receiving</h1>
-        <p className="text-sm text-muted-foreground">Confirm incoming packages at the dock — one scan moves every SKU inside the box.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl">Deliveries &amp; Receiving</h1>
+          <p className="text-sm text-muted-foreground">Confirm incoming packages at the dock — one scan moves every SKU inside the box.</p>
+        </div>
+        <Button asChild><Link href="/scan"><ScanLine className="h-4 w-4" /> Scan a package</Link></Button>
       </div>
       <ReceivingPanel awaiting={awaiting} history={historyRows} />
     </div>

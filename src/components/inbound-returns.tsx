@@ -11,7 +11,7 @@ export function InboundReturns({ returns }: { returns: InboundReturn[] }) {
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base"><Undo2 className="h-4 w-4 text-primary" /> Inbound returns</CardTitle>
-        <p className="text-xs text-muted-foreground">Returns in transit to your warehouse. Scan the RET QR (header <strong>Scan</strong>), or hit <strong>Receive</strong> — custody closes on your confirmation.</p>
+        <p className="text-xs text-muted-foreground">Returns in transit to your warehouse. Scan the RET QR, or hit <strong>Receive</strong> — custody closes on your confirmation.</p>
       </CardHeader>
       <CardContent className="space-y-3">
         {returns.map((r) => (

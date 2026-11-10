@@ -107,7 +107,7 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Ready to dispatch</CardTitle>
-            <p className="text-xs text-muted-foreground">Scan the package QR at pickup (header <strong>Scan</strong>), or hit <strong>Dispatch</strong> here to confirm — stock moves on confirmation, never a stray tap.</p>
+            <p className="text-xs text-muted-foreground">Scan the package QR at pickup, or hit <strong>Dispatch</strong> here to confirm — stock moves on confirmation, never a stray tap.</p>
           </CardHeader>
           <CardContent className="space-y-3">
             {packed.map((p) => (

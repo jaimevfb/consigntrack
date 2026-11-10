@@ -21,7 +21,7 @@ export function ReceivingPanel({ awaiting, history }: { awaiting: AwaitingPackag
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Awaiting receipt</CardTitle>
-          <p className="text-xs text-muted-foreground">Packages in transit to your store. Hit <strong>Scan</strong> (top bar) for the camera, or <strong>Receive</strong> to confirm one here — stock only moves once you confirm the manifest.</p>
+          <p className="text-xs text-muted-foreground">Packages in transit to your store. Use <strong>Scan a package</strong> above for the camera, or <strong>Receive</strong> to confirm one — stock only moves once you confirm the manifest.</p>
         </CardHeader>
         <CardContent>
           {awaiting.length === 0 ? (

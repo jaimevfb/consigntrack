@@ -184,9 +184,6 @@ export function AppShell({
           <div className="lg:hidden">
             <Wordmark showMark />
           </div>
-          <Button asChild size="sm" className="ml-auto lg:ml-0">
-            <Link href="/scan"><ScanLine className="h-4 w-4" /> Scan</Link>
-          </Button>
           <div className="ml-auto flex items-center gap-3">
             <div className="hidden text-right sm:block">
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{roleLabel} workspace</div>

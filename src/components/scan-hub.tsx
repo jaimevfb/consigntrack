@@ -20,13 +20,17 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
   const [cart, setCart] = React.useState<CartLine[]>([]);
   const [flash, setFlash] = React.useState<string | null>(null);
   const [camState, setCamState] = React.useState<"off" | "on" | "error">("off");
+  const [showTyped, setShowTyped] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const lock = React.useRef(false);
   const scannerRef = React.useRef<{ stop: () => Promise<void> } | null>(null);
+  const failRef = React.useRef({ count: 0, last: 0 });
+  const startedRef = React.useRef(false);
 
   const handle = React.useCallback(async (code: string) => {
     if (lock.current) return;
     lock.current = true;
+    failRef.current.count = 0; // a QR was read — reset the fallback counter
     const r = await resolveScan(code);
     if (r.kind === "sku") {
       setCart((c) => {
@@ -46,25 +50,38 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
     setResult(r); // dispatch / return / receive — stays until the user resolves
   }, []);
 
-  // Deep link: resolve the ?code= on mount.
-  React.useEffect(() => { if (initialCode) handle(initialCode); }, [initialCode, handle]);
-
-  async function startCamera() {
+  const startCamera = React.useCallback(async () => {
     try {
       const { Html5Qrcode } = await import("html5-qrcode");
       const h = new Html5Qrcode("qr-reader", { verbose: false });
       scannerRef.current = h;
       await h.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 230, height: 230 } },
-        (decoded: string) => handle(decoded), () => {});
+        (decoded: string) => { failRef.current.count = 0; handle(decoded); },
+        () => {
+          // Reveal the typed fallback only after the scanner fails ~3 times.
+          const now = Date.now();
+          if (now - failRef.current.last > 2500) {
+            failRef.current.last = now;
+            failRef.current.count += 1;
+            if (failRef.current.count >= 3) setShowTyped(true);
+          }
+        });
       setCamState("on");
     } catch {
       setCamState("error");
+      setShowTyped(true); // camera unavailable → typing is the only way
     }
-  }
+  }, [handle]);
+
   async function stopCamera() {
     try { await scannerRef.current?.stop(); } catch { /* ignore */ }
     scannerRef.current = null; setCamState("off");
   }
+
+  // Deep link: resolve the ?code= on mount.
+  React.useEffect(() => { if (initialCode) handle(initialCode); }, [initialCode, handle]);
+  // Camera-first: start it automatically.
+  React.useEffect(() => { if (!startedRef.current) { startedRef.current = true; startCamera(); } }, [startCamera]);
   React.useEffect(() => () => { scannerRef.current?.stop?.().catch(() => {}); }, []);
 
   function onTyped(e: React.FormEvent) { e.preventDefault(); const c = typed.trim(); setTyped(""); if (c) handle(c); }
@@ -99,7 +116,7 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
               <div className="flex flex-col items-center gap-3 py-12 text-center">
                 {camState === "error" ? <CameraOff className="h-8 w-8 text-muted-foreground" /> : <Camera className="h-8 w-8 text-muted-foreground" />}
                 <p className="max-w-xs text-sm text-muted-foreground">
-                  {camState === "error" ? "Camera unavailable or blocked. Type the code below instead." : "Point your camera at a package QR or a product barcode."}
+                  {camState === "error" ? "Camera unavailable or blocked." : "Point your camera at a package QR or a product barcode."}
                 </p>
                 {camState !== "error" ? <Button onClick={startCamera}><Camera className="h-4 w-4" /> Start camera</Button> : null}
               </div>
@@ -108,13 +125,18 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
             )}
           </div>
 
-          <form onSubmit={onTyped} className="mt-3 flex gap-2">
-            <div className="relative flex-1">
-              <ScanLine className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="…or type a PKG- / RET- code or product SKU" className="pl-8" />
+          {showTyped ? (
+            <div className="mt-3">
+              <p className="mb-1.5 text-xs text-muted-foreground">{camState === "error" ? "Camera unavailable — type the code instead." : "Having trouble scanning? Type the code."}</p>
+              <form onSubmit={onTyped} className="flex gap-2">
+                <div className="relative flex-1">
+                  <ScanLine className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="PKG- / RET- code or product SKU" className="pl-8" autoFocus />
+                </div>
+                <Button type="submit" variant="outline">Go</Button>
+              </form>
             </div>
-            <Button type="submit" variant="outline">Go</Button>
-          </form>
+          ) : null}
           {flash ? <p className="mt-2 flex items-center gap-1.5 text-sm text-ok-foreground"><Check className="h-4 w-4" /> {flash}</p> : null}
         </CardContent>
       </Card>
