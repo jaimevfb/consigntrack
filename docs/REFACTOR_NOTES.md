@@ -65,3 +65,20 @@ The prompt scopes this to the Consignee Portal and puts the consignor portal out
 ### Recommended options to unblock A
 1. **Expand scope to the shared ledger (recommended).** Migrate *both* portals onto the package/ledger model in this refactor — it is physically one system, and the "unit vs quantity" seam is the actual root bug. The consignor's deliveries become outbound packages; its Item-records/Scan/custody screens are replaced by package + ledger views. Larger, but it's the only way to truly delete serialization and reach one source of truth.
 2. **Dual-model with a compatibility layer.** Build `packages`/`ledger_entries` for the consignee side only; keep `items`/`scan_events` alive for the consignor portal behind an adapter so its reads don't break. Honors the stated scope, but leaves two models running (doesn't kill the root bug) and is more total code.
+
+---
+
+## Decision: Option 1 (expand to the shared ledger). Progress log.
+
+### Phase 1 — Unified data layer ✅ (migration `0018_two_tier_ledger.sql`, `supabase/seed_demo.sql`)
+- New tables: `packages` (PKG-/RET-, direction, consignee-locked), `package_lines` (qty_expected/received/disputed), `ledger_entries` (append-only, 6 entry types, signed qty, ref_type/ref_id, actor, reason).
+- Append-only enforced by `block_ledger_mutation()` triggers (UPDATE/DELETE both blocked — verified).
+- **The one formula:** view `v_on_hand` + function `get_on_hand(consignee, sku)` = Σ ledger qty. Nothing else computes stock from Phase 4 on.
+- Evolved: `products.status`, `agreements.effective_from`, `sale_items.source`, `settlements.payment_proof_url`.
+- RLS: reads scoped to store/consignor/admin; writes only via SECURITY DEFINER RPCs (direct writes blocked by RLS).
+- **Opening balances — DEVIATION:** seeded from `stock_levels` (the real quantity source), not the sparse `items` table which never held true quantities. One `ADJUSTMENT` entry per SKU/store, reason `"migration from unit serialization"`, re-runnable (guarded). Reproduces reality: Kultura 27, Baguio 16, Ilocos 11.
+- Junk product `"123"` archived (status='archived'); a hard delete is blocked by the legacy `stock_movements` append-only guard and legacy FKs — it carries 0 stock so it never enters the ledger, and Phase 2 removes it fully when legacy tables drop.
+- Seed `PKG-8841` (Maria's Weaves → Kultura, 26 units / 4 SKUs, 2 disputed, 2 sales) verified: IP-180 31, TR-450 8, MAR-0014 5, MAR-0015 2.
+- No app code changed in Phase 1 (additive), so the build is unchanged/green.
+
+### Phases 2–6 — pending.
