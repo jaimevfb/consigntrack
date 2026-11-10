@@ -1,102 +1,59 @@
 import { requireProfile } from "@/lib/auth";
-import { getStoreInventory, type InventoryRow } from "@/lib/ledger-data";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { StatusPill } from "@/components/status-pill";
+import { createClient } from "@/lib/supabase/server";
+import { getStoreInventory } from "@/lib/ledger-data";
+import { InventoryTable, type InvRow } from "@/components/inventory-table";
 import { formatPHP, formatNumber } from "@/lib/utils";
-import { unitLabel } from "@/lib/units";
 
 export const metadata = { title: "Inventory & Catalog" };
-
-function stockStatus(onHand: number): { label: string; tone: "ok" | "warn" | "neutral" } {
-  if (onHand <= 0) return { label: "Out of stock", tone: "neutral" };
-  if (onHand <= 3) return { label: "Low stock", tone: "warn" };
-  return { label: "In stock", tone: "ok" };
-}
 
 export default async function StoreInventoryPage() {
   const { profile } = await requireProfile();
   if (!profile.store_id) return <p className="text-sm text-muted-foreground">No store scope.</p>;
-  const rows = await getStoreInventory(profile.store_id);
+  const supabase = createClient();
+  const since = new Date(); since.setDate(since.getDate() - 30);
 
-  const totalUnits = rows.reduce((a, r) => a + r.on_hand, 0);
-  const totalValue = rows.reduce((a, r) => a + r.on_hand * r.unit_price, 0);
-  const totalDisputed = rows.reduce((a, r) => a + r.in_dispute, 0);
+  const [inv, { data: sales }] = await Promise.all([
+    getStoreInventory(profile.store_id),
+    supabase.from("ledger_entries").select("sku_id, qty").eq("consignee_id", profile.store_id).eq("entry_type", "SALE").gte("created_at", since.toISOString()),
+  ]);
+  const soldBy = new Map<string, number>();
+  for (const s of ((sales ?? []) as { sku_id: string; qty: number }[])) soldBy.set(s.sku_id, (soldBy.get(s.sku_id) ?? 0) + -s.qty);
 
-  const byConsignor = new Map<string, InventoryRow[]>();
-  for (const r of rows) {
-    if (!byConsignor.has(r.consignor_name)) byConsignor.set(r.consignor_name, []);
-    byConsignor.get(r.consignor_name)!.push(r);
-  }
+  const rows: InvRow[] = inv.map((r) => ({
+    sku_id: r.sku_id, sku: r.sku, name: r.name, unit_of_measure: r.unit_of_measure, unit_price: r.unit_price,
+    consignor_name: r.consignor_name, commission_pct: r.commission_pct, on_hand: r.on_hand, in_dispute: r.in_dispute,
+    sold: soldBy.get(r.sku_id) ?? 0,
+  }));
+
+  const sellableUnits = rows.reduce((a, r) => a + Math.max(0, r.on_hand), 0);
+  const value = rows.reduce((a, r) => a + Math.max(0, r.on_hand) * r.unit_price, 0);
+  const disputed = rows.reduce((a, r) => a + r.in_dispute, 0);
+  const lowCount = rows.filter((r) => r.on_hand > 0 && r.on_hand <= 3).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
         <h1 className="text-2xl">Inventory &amp; Catalog</h1>
-        <p className="text-sm text-muted-foreground">Live on-hand per SKU, grouped by consignor. Prices and commission are set by the agreement — read-only here.</p>
+        <p className="text-sm text-muted-foreground">What you can sell and what needs attention. Prices and commission are set by the agreement.</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <SummaryTile label="Units on hand" value={formatNumber(totalUnits)} />
-        <SummaryTile label="Retail value" value={formatPHP(totalValue)} />
-        <SummaryTile label="In dispute" value={formatNumber(totalDisputed)} tone={totalDisputed > 0 ? "warn" : undefined} />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Strip label="Sellable units" value={formatNumber(sellableUnits)} />
+        <Strip label="Retail value" value={formatPHP(value)} />
+        <Strip label="Disputed" value={formatNumber(disputed)} tone={disputed > 0 ? "warn" : undefined} />
+        <Strip label="Low stock" value={formatNumber(lowCount)} tone={lowCount > 0 ? "info" : undefined} />
       </div>
 
-      {byConsignor.size === 0 ? (
-        <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">No stock yet. Receive a package to build inventory.</CardContent></Card>
-      ) : (
-        [...byConsignor.entries()].map(([consignor, items]) => (
-          <Card key={consignor}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">{consignor}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead>SKU</TableHead>
-                      <TableHead className="text-right">Agreed price</TableHead>
-                      <TableHead className="text-right">Commission</TableHead>
-                      <TableHead className="text-right">On hand</TableHead>
-                      <TableHead className="text-right">In dispute</TableHead>
-                      <TableHead className="text-right">Retail value</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((r) => {
-                      const st = stockStatus(r.on_hand);
-                      return (
-                        <TableRow key={r.sku_id}>
-                          <TableCell className="font-medium">{r.name}<div className="text-xs text-muted-foreground">{unitLabel(r.unit_of_measure)}</div></TableCell>
-                          <TableCell className="tnum text-sm text-muted-foreground">{r.sku}</TableCell>
-                          <TableCell className="tnum text-right">{formatPHP(r.unit_price)}</TableCell>
-                          <TableCell className="tnum text-right text-muted-foreground">{r.commission_pct}%</TableCell>
-                          <TableCell className="tnum text-right font-medium">{r.on_hand}</TableCell>
-                          <TableCell className="tnum text-right">{r.in_dispute > 0 ? <span className="text-warn-foreground">{r.in_dispute}</span> : "—"}</TableCell>
-                          <TableCell className="tnum text-right">{formatPHP(r.on_hand * r.unit_price)}</TableCell>
-                          <TableCell><StatusPill tone={st.tone}>{st.label}</StatusPill></TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        ))
-      )}
+      <InventoryTable rows={rows} />
     </div>
   );
 }
 
-function SummaryTile({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
+function Strip({ label, value, tone }: { label: string; value: string; tone?: "warn" | "info" }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
       <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className={`tnum mt-1.5 text-2xl font-bold ${tone === "warn" ? "text-warn-foreground" : ""}`}>{value}</div>
+      <div className={`tnum mt-1.5 text-2xl font-bold ${tone === "warn" ? "text-warn-foreground" : tone === "info" ? "text-primary" : ""}`}>{value}</div>
     </div>
   );
 }

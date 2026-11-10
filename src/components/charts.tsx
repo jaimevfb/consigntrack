@@ -124,6 +124,71 @@ export function AreaTrend({
   );
 }
 
+/**
+ * Daily totals as vertical bars (design-spec rule: never a smoothed line).
+ * y starts at 0, zero days render as 2px stubs, ≤3 gridlines, sparse-data note.
+ */
+export function DailyBars({
+  points,
+  height = 200,
+  valueLabel = (n) => String(n),
+}: {
+  points: TrendPoint[];
+  height?: number;
+  valueLabel?: (n: number) => string;
+}) {
+  const w = 640;
+  const h = height;
+  const padL = 46, padR = 8, padTop = 10, padBottom = 22;
+  const innerW = w - padL - padR;
+  const innerH = h - padTop - padBottom;
+  const max = Math.max(1, ...points.map((p) => p.value));
+  const n = points.length || 1;
+  const slot = innerW / n;
+  const bw = Math.min(slot * 0.62, 26);
+  const ticks = [0, 0.5, 1];
+  const labelEvery = Math.ceil(n / 7);
+  const sellingDays = points.filter((p) => p.value > 0).length;
+  const total = points.reduce((a, p) => a + p.value, 0);
+
+  return (
+    <div className="w-full">
+      <svg viewBox={`0 0 ${w} ${h}`} className="h-auto w-full" role="img" aria-label="Daily totals">
+        {ticks.map((f, i) => {
+          const y = padTop + innerH - f * innerH;
+          return (
+            <g key={i}>
+              <line x1={padL} x2={w - padR} y1={y} y2={y} stroke="var(--border)" strokeWidth={1} />
+              <text x={padL - 8} y={y + 3} textAnchor="end" className="fill-[var(--muted-foreground)]" style={{ fontSize: 9, fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>
+                {valueLabel(Math.round(max * f))}
+              </text>
+            </g>
+          );
+        })}
+        {points.map((p, i) => {
+          const x = padL + i * slot + (slot - bw) / 2;
+          const barH = p.value > 0 ? Math.max(2, (p.value / max) * innerH) : 2;
+          const y = padTop + innerH - barH;
+          return (
+            <g key={i}>
+              <rect x={x} y={y} width={bw} height={barH} rx={2}
+                fill={p.value > 0 ? "var(--primary)" : "var(--border)"} opacity={p.value > 0 ? 1 : 0.6} />
+              {i % labelEvery === 0 || i === n - 1 ? (
+                <text x={x + bw / 2} y={h - 6} textAnchor="middle" className="fill-[var(--muted-foreground)]" style={{ fontSize: 9, fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>
+                  {p.label}
+                </text>
+              ) : null}
+            </g>
+          );
+        })}
+      </svg>
+      {sellingDays <= 3 ? (
+        <p className="mt-1 text-xs text-muted-foreground">{sellingDays} selling day{sellingDays === 1 ? "" : "s"} in {n} · {valueLabel(total)} total</p>
+      ) : null}
+    </div>
+  );
+}
+
 export interface DonutSegment {
   label: string;
   value: number;

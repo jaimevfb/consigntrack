@@ -1,6 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { getConsignorInsights } from "@/lib/consignor-data";
-import { AreaTrend, RankedBars } from "@/components/charts";
+import { DailyBars, RankedBars } from "@/components/charts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPHP, formatNumber } from "@/lib/utils";
@@ -22,7 +22,7 @@ export default async function ConsignorInsightsPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-base">Daily gross sales</CardTitle></CardHeader>
-          <CardContent><AreaTrend points={series} height={200} valueLabel={formatPHP} /></CardContent>
+          <CardContent><DailyBars points={series} height={200} valueLabel={formatPHP} /></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Gross by store</CardTitle></CardHeader>

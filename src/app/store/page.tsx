@@ -3,7 +3,7 @@ import { ShoppingCart, Boxes, Coins, FileClock, PackageSearch, QrCode, Package }
 import { requireProfile } from "@/lib/auth";
 import { getStoreDashboardLedger, getStoreSalesAnalytics } from "@/lib/ledger-data";
 import { StaffDashboard } from "@/components/staff-dashboard";
-import { AreaTrend, RankedBars } from "@/components/charts";
+import { DailyBars, RankedBars } from "@/components/charts";
 import { KpiTile } from "@/components/kpi-tile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,7 +60,7 @@ export default async function StoreDashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <AreaTrend points={sales.series} height={200} valueLabel={formatPHP} />
+            <DailyBars points={sales.series} height={200} valueLabel={formatPHP} />
           </CardContent>
         </Card>
         <Card>
