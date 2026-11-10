@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { PackagePlus, Plus, Trash2, Printer, Truck, ScanLine } from "lucide-react";
@@ -152,7 +153,7 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
               <TableBody>
                 {history.map((h) => (
                   <TableRow key={h.id}>
-                    <TableCell className="tnum font-medium">{h.pkg_code}</TableCell>
+                    <TableCell className="tnum font-medium"><Link href={`/packages/${h.id}`} className="text-primary hover:underline">{h.pkg_code}</Link></TableCell>
                     <TableCell>{h.store_name}</TableCell>
                     <TableCell className="tnum text-right">{h.units}</TableCell>
                     <TableCell className="tnum text-right">{formatPHP(h.value)}</TableCell>

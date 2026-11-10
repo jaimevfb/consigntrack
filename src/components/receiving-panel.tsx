@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Truck, QrCode, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,7 +88,7 @@ export function ReceivingPanel({ awaiting, history }: { awaiting: AwaitingPackag
               <TableBody>
                 {history.map((h) => (
                   <TableRow key={h.id}>
-                    <TableCell className="tnum font-medium">{h.pkg_code}</TableCell>
+                    <TableCell className="tnum font-medium"><Link href={`/packages/${h.id}`} className="text-primary hover:underline">{h.pkg_code}</Link></TableCell>
                     <TableCell>{h.consignor_name}</TableCell>
                     <TableCell className="tnum text-right">{h.units}</TableCell>
                     <TableCell><StatusPill tone={STATUS_TONE[h.status] ?? "neutral"}>{statusLabel(h.status)}</StatusPill></TableCell>
