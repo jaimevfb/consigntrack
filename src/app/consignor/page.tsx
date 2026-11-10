@@ -3,7 +3,8 @@ import { Warehouse, Truck, Store as StoreIcon, Coins, FileClock, ArrowUpRight, P
 import { requireProfile } from "@/lib/auth";
 import { getConsignorNetwork } from "@/lib/consignor-data";
 import { KpiTile } from "@/components/kpi-tile";
-import { LineChart } from "@/components/charts";
+import { LineChart, RankedBars } from "@/components/charts";
+import { SettlementStatusPill } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusPill } from "@/components/status-pill";
@@ -50,6 +51,39 @@ export default async function ConsignorDashboardPage() {
           <LineChart points={net.netSeries} height={190} valueLabel={formatPHP} />
         </CardContent>
       </Card>
+
+      {/* Top products + payout forecast */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Top products across stores</CardTitle></CardHeader>
+          <CardContent>
+            {net.topProducts.length > 0 ? (
+              <RankedBars rows={net.topProducts.map((p) => ({ label: p.name, value: p.gross, sub: `${p.sold} sold` }))} valueFormat={formatPHP} />
+            ) : <p className="py-8 text-center text-sm text-muted-foreground">No sales across your stores yet.</p>}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Payout forecast</CardTitle><p className="text-xs text-muted-foreground">Expected settlement cashflow, by store and period.</p></CardHeader>
+          <CardContent>
+            {net.payoutForecast.length > 0 ? (
+              <div className="divide-y divide-border">
+                {net.payoutForecast.map((p, i) => (
+                  <div key={i} className="flex items-center justify-between gap-3 py-2.5">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium">{p.store_name}</div>
+                      <div className="text-xs text-muted-foreground">Period to {formatDate(p.period_end)}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="tnum text-sm font-semibold">{formatPHP(p.net_payable)}</span>
+                      <SettlementStatusPill status={p.status} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="py-8 text-center text-sm text-muted-foreground">Nothing pending — all statements settled.</p>}
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">

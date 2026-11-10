@@ -8,6 +8,8 @@ export interface ConsignorNetwork {
   pendingSettlements: number;
   net30: number;
   netSeries: { label: string; value: number }[];
+  topProducts: { name: string; sku: string; sold: number; gross: number }[];
+  payoutForecast: { store_name: string; period_end: string; net_payable: number; status: string }[];
   feed: { pkg_code: string; direction: string; status: string; store_name: string; units: number; updated_at: string }[];
   leaderboard: { store_id: string; store_name: string; onHand: number; sold: number; sellThrough: number }[];
 }
@@ -16,10 +18,10 @@ export async function getConsignorNetwork(consignorId: string): Promise<Consigno
   const supabase = createClient();
   const [{ data: wh }, { data: prods }, { data: ledger }, { data: packages }, { data: settlements }, { data: agreements }] = await Promise.all([
     supabase.from("v_warehouse_on_hand").select("sku_id, qty").eq("consignor_id", consignorId),
-    supabase.from("products").select("id, unit_price, consignor_id").eq("consignor_id", consignorId),
+    supabase.from("products").select("id, sku, name, unit_price, consignor_id").eq("consignor_id", consignorId),
     supabase.from("ledger_entries").select("consignee_id, sku_id, entry_type, qty, unit_price, created_at, stores:consignee_id(name), products!inner(consignor_id)").eq("products.consignor_id", consignorId),
     supabase.from("packages").select("pkg_code, direction, status, updated_at, stores(name), package_lines(qty_expected)").eq("consignor_id", consignorId).order("updated_at", { ascending: false }).limit(8),
-    supabase.from("settlements").select("gross_sales, net_payable, status, agreements!inner(consignor_id)").eq("agreements.consignor_id", consignorId),
+    supabase.from("settlements").select("period_start, period_end, gross_sales, net_payable, status, agreements!inner(consignor_id, stores(name))").eq("agreements.consignor_id", consignorId).order("period_end", { ascending: false }),
     supabase.from("agreements").select("store_id, commission_pct").eq("consignor_id", consignorId),
   ]);
 
@@ -78,6 +80,20 @@ export async function getConsignorNetwork(consignorId: string): Promise<Consigno
   const feed = ((packages ?? []) as unknown as Array<{ pkg_code: string; direction: string; status: string; updated_at: string; stores: { name: string } | null; package_lines: { qty_expected: number }[] }>)
     .map((p) => ({ pkg_code: p.pkg_code, direction: p.direction, status: p.status, store_name: p.stores?.name ?? "—", units: p.package_lines.reduce((a, l) => a + l.qty_expected, 0), updated_at: p.updated_at }));
 
+  // Top products network-wide (by gross) + payout forecast from open settlements.
+  const soldBySku = new Map<string, { sold: number; gross: number }>();
+  for (const e of led) {
+    if (e.entry_type !== "SALE") continue;
+    const q = -e.qty; const amt = q * (e.unit_price ?? price.get(e.sku_id) ?? 0);
+    const s = soldBySku.get(e.sku_id) ?? { sold: 0, gross: 0 }; s.sold += q; s.gross += amt; soldBySku.set(e.sku_id, s);
+  }
+  const prodInfo = new Map(((prods ?? []) as { id: string; sku: string; name: string }[]).map((p) => [p.id, p]));
+  const topProducts = [...soldBySku.entries()].map(([sku, s]) => ({ name: prodInfo.get(sku)?.name ?? "—", sku: prodInfo.get(sku)?.sku ?? "—", sold: s.sold, gross: Math.round(s.gross) })).sort((a, b) => b.gross - a.gross).slice(0, 6);
+  const payoutForecast = ((settlements ?? []) as unknown as Array<{ period_end: string; net_payable: number; status: string; agreements: { stores: { name: string } | null } | null }>)
+    .filter((s) => s.status !== "confirmed")
+    .map((s) => ({ store_name: s.agreements?.stores?.name ?? "—", period_end: s.period_end, net_payable: Number(s.net_payable), status: s.status }))
+    .slice(0, 6);
+
   const leaderboard = [...perStore.entries()].map(([storeId, s]) => {
     const delivered = s.onHand + s.sold; // received into store across time ≈ on hand + sold
     return { store_id: storeId, store_name: s.name, onHand: Math.max(0, s.onHand), sold: s.sold, sellThrough: delivered > 0 ? Math.round((s.sold / delivered) * 100) : 0 };
@@ -87,7 +103,7 @@ export async function getConsignorNetwork(consignorId: string): Promise<Consigno
     warehouseUnits, warehouseValue: Math.round(warehouseValue), inTransitUnits,
     atStoreUnits, atStoreValue: Math.round(atStoreValue),
     unbilledSales, pendingSettlements: Math.round(pendingSettlements),
-    net30: Math.round(net30), netSeries, feed, leaderboard,
+    net30: Math.round(net30), netSeries, topProducts, payoutForecast, feed, leaderboard,
   };
 }
 

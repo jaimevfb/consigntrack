@@ -204,6 +204,7 @@ export interface StoreDashboardLedger {
   gross30: number;
   commission30: number;
   settlementsDueAmount: number;
+  settlementsDue: { consignor_name: string; period_end: string; net_payable: number; status: string }[];
 }
 
 export async function getStoreDashboardLedger(storeId: string): Promise<StoreDashboardLedger> {
@@ -212,14 +213,20 @@ export async function getStoreDashboardLedger(storeId: string): Promise<StoreDas
     getStoreInventory(storeId),
     getStoreSalesAnalytics(storeId),
     supabase.from("packages").select("id", { count: "exact", head: true }).eq("consignee_id", storeId).eq("status", "IN_TRANSIT"),
-    supabase.from("settlements").select("net_payable, status, agreements!inner(store_id)").eq("agreements.store_id", storeId).neq("status", "confirmed"),
+    supabase.from("settlements").select("net_payable, status, period_end, agreements!inner(store_id, consignors(name))").eq("agreements.store_id", storeId).neq("status", "confirmed").order("period_end", { ascending: true }),
   ]);
   const activeUnits = inv.reduce((a, r) => a + r.on_hand, 0);
   const activeValue = inv.reduce((a, r) => a + r.on_hand * r.unit_price, 0);
-  const settlementsDueAmount = ((settlements ?? []) as { net_payable: number }[]).reduce((a, s) => a + Number(s.net_payable), 0);
+  const rows = ((settlements ?? []) as unknown as Array<{ net_payable: number; status: string; period_end: string; agreements: { consignors: { name: string } | null } | null }>);
+  const settlementsDueAmount = rows.reduce((a, s) => a + Number(s.net_payable), 0);
+  const rank = (s: string) => (s === "pending" ? 0 : s === "paid" ? 1 : 2);
+  const settlementsDue = rows
+    .map((s) => ({ consignor_name: s.agreements?.consignors?.name ?? "—", period_end: s.period_end, net_payable: Number(s.net_payable), status: s.status }))
+    .sort((a, b) => rank(a.status) - rank(b.status) || a.period_end.localeCompare(b.period_end))
+    .slice(0, 6);
   return {
     activeUnits, activeValue: Math.round(activeValue),
     incoming: incoming ?? 0,
-    gross30: sales.gross30, commission30: sales.commission30, settlementsDueAmount: Math.round(settlementsDueAmount),
+    gross30: sales.gross30, commission30: sales.commission30, settlementsDueAmount: Math.round(settlementsDueAmount), settlementsDue,
   };
 }

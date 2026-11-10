@@ -5,9 +5,10 @@ import { getStoreDashboardLedger, getStoreSalesAnalytics } from "@/lib/ledger-da
 import { StaffDashboard } from "@/components/staff-dashboard";
 import { LineChart, RankedBars } from "@/components/charts";
 import { KpiTile } from "@/components/kpi-tile";
+import { SettlementStatusPill } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatPHP, formatNumber } from "@/lib/utils";
+import { formatPHP, formatNumber, formatDate } from "@/lib/utils";
 
 export default async function StoreDashboardPage() {
   const { profile } = await requireProfile();
@@ -76,6 +77,33 @@ export default async function StoreDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Settlements due</CardTitle>
+          <p className="text-xs text-muted-foreground">What you owe consignors, soonest first · {formatPHP(dash.settlementsDueAmount)} total</p>
+        </CardHeader>
+        <CardContent>
+          {dash.settlementsDue.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">Nothing due — all statements settled.</p>
+          ) : (
+            <div className="divide-y divide-border">
+              {dash.settlementsDue.map((s, i) => (
+                <div key={i} className="flex items-center justify-between gap-3 py-2.5">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">{s.consignor_name}</div>
+                    <div className="text-xs text-muted-foreground">Period to {formatDate(s.period_end)}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="tnum text-sm font-semibold">{formatPHP(s.net_payable)}</span>
+                    <SettlementStatusPill status={s.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
