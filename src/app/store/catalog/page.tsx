@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPHP } from "@/lib/utils";
+import { unitLabel } from "@/lib/units";
 
 export const metadata = { title: "Catalog" };
 
@@ -17,7 +18,7 @@ export default async function StoreCatalogPage() {
   // active agreement with — the agreed catalog surfaces here automatically.
   const { data: products } = await supabase
     .from("products")
-    .select("id, name, sku, unit_price, consignors(name)")
+    .select("id, name, sku, unit_price, unit_of_measure, consignors(name)")
     .order("name");
 
   const rows = ((products ?? []) as unknown as Array<{
@@ -25,6 +26,7 @@ export default async function StoreCatalogPage() {
     name: string;
     sku: string;
     unit_price: number;
+    unit_of_measure: string;
     consignors: { name: string } | null;
   }>);
 
@@ -65,6 +67,7 @@ export default async function StoreCatalogPage() {
                   <TableRow>
                     <TableHead>Product</TableHead>
                     <TableHead>SKU</TableHead>
+                    <TableHead>Unit</TableHead>
                     <TableHead className="text-right">Agreed price</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -73,6 +76,7 @@ export default async function StoreCatalogPage() {
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.name}</TableCell>
                       <TableCell className="tnum text-sm text-muted-foreground">{p.sku}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{unitLabel(p.unit_of_measure)}</TableCell>
                       <TableCell className="tnum text-right">{formatPHP(p.unit_price)}</TableCell>
                     </TableRow>
                   ))}

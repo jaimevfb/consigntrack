@@ -7,6 +7,7 @@ import { QrLabel } from "@/components/qr-label";
 import { ItemActions } from "@/components/item-actions";
 import { StatusPill } from "@/components/status-pill";
 import { formatPHP, formatDate } from "@/lib/utils";
+import { unitLabel } from "@/lib/units";
 import type { ItemDetail } from "@/lib/items-data";
 
 export function ItemDetailView({
@@ -90,7 +91,13 @@ export function ItemDetailView({
                 <CardTitle className="text-base">QR label</CardTitle>
               </CardHeader>
               <CardContent>
-                <QrLabel token={item.qr_token} code={item.code} description={item.description} />
+                <QrLabel
+                  token={item.qr_token}
+                  code={item.code}
+                  description={item.description}
+                  sku={item.products?.sku}
+                  unit={item.products?.unit_of_measure}
+                />
               </CardContent>
             </Card>
           ) : null}
@@ -100,6 +107,8 @@ export function ItemDetailView({
               <CardTitle className="text-base">Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
+              {item.products?.sku ? <Row label="SKU" value={<span className="tnum">{item.products.sku}</span>} /> : null}
+              {item.products?.unit_of_measure ? <Row label="Unit" value={unitLabel(item.products.unit_of_measure)} /> : null}
               <Row label="Category" value={item.category ?? "—"} />
               <Row label="Condition" value={item.condition ?? "—"} />
               <Row label="Holder" value={<span className="capitalize">{item.current_holder}</span>} />

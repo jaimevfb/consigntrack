@@ -5,11 +5,13 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth";
 import type { ActionResult } from "@/app/_actions/ledger";
+import { UNIT_KEYS } from "@/lib/units";
 
+// SKUs are system-issued (DB trigger), never accepted from the client.
 const productSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  sku: z.string().optional(),
   unit_price: z.coerce.number().nonnegative(),
+  unit_of_measure: z.enum(UNIT_KEYS).default("piece"),
 });
 
 export async function createProduct(input: unknown): Promise<ActionResult> {
@@ -22,8 +24,9 @@ export async function createProduct(input: unknown): Promise<ActionResult> {
   const { error } = await supabase.from("products").insert({
     consignor_id: session.profile.consignor_id,
     name: parsed.data.name,
-    sku: parsed.data.sku || null,
     unit_price: parsed.data.unit_price,
+    unit_of_measure: parsed.data.unit_of_measure,
+    // sku omitted — the set_product_sku trigger issues a unique one.
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/consignor/products");
@@ -33,8 +36,8 @@ export async function createProduct(input: unknown): Promise<ActionResult> {
 const updateSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
-  sku: z.string().optional(),
   unit_price: z.coerce.number().nonnegative(),
+  unit_of_measure: z.enum(UNIT_KEYS).default("piece"),
 });
 
 export async function updateProduct(input: unknown): Promise<ActionResult> {
@@ -43,7 +46,11 @@ export async function updateProduct(input: unknown): Promise<ActionResult> {
   const supabase = createClient();
   const { error } = await supabase
     .from("products")
-    .update({ name: parsed.data.name, sku: parsed.data.sku || null, unit_price: parsed.data.unit_price })
+    .update({
+      name: parsed.data.name,
+      unit_price: parsed.data.unit_price,
+      unit_of_measure: parsed.data.unit_of_measure,
+    })
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/consignor/products");

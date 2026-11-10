@@ -56,6 +56,7 @@ export interface Product {
   name: string;
   sku: string | null;
   unit_price: number;
+  unit_of_measure: string;
   created_at: string;
   updated_at: string;
 }

@@ -5,13 +5,14 @@ import type { Item, ScanEvent } from "@/lib/types";
 export interface ItemRow extends Item {
   stores: { name: string } | null;
   consignors: { name: string } | null;
+  products: { sku: string; unit_of_measure: string } | null;
 }
 
 export const getItems = cache(async (): Promise<ItemRow[]> => {
   const supabase = createClient();
   const { data } = await supabase
     .from("items")
-    .select("*, stores(name), consignors(name)")
+    .select("*, stores(name), consignors(name), products(sku, unit_of_measure)")
     .order("updated_at", { ascending: false });
   return (data ?? []) as unknown as ItemRow[];
 });
@@ -26,7 +27,7 @@ export interface ItemDetail {
 export async function getItemById(id: string): Promise<ItemDetail | null> {
   const supabase = createClient();
   const [{ data: item }, { data: events }, { data: disputes }, { data: exceptions }] = await Promise.all([
-    supabase.from("items").select("*, stores(name), consignors(name)").eq("id", id).maybeSingle(),
+    supabase.from("items").select("*, stores(name), consignors(name), products(sku, unit_of_measure)").eq("id", id).maybeSingle(),
     supabase.from("scan_events").select("*").eq("item_id", id).order("created_at", { ascending: true }),
     supabase.from("disputes").select("id, subject, status, resolution, created_at").eq("item_id", id).order("created_at", { ascending: false }),
     supabase.from("exceptions").select("id, kind, detail, status, created_at").eq("item_id", id).order("created_at", { ascending: false }),
