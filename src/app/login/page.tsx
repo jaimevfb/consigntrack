@@ -11,7 +11,7 @@ import { Wordmark } from "@/components/brand";
 
 export default function AuthPage() {
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-background px-6 py-12">
+    <main className="force-light relative flex min-h-screen items-center justify-center bg-background px-6 py-12">
       {/* a restrained touch of brand at the top */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-primary/10 to-transparent" />
       <div className="relative z-10 w-full max-w-sm">
