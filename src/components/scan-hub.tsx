@@ -22,10 +22,19 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
   const [camState, setCamState] = React.useState<"off" | "on" | "error">("off");
   const [showTyped, setShowTyped] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
+  const [success, setSuccess] = React.useState<string | null>(null);
   const lock = React.useRef(false);
   const scannerRef = React.useRef<{ stop: () => Promise<void> } | null>(null);
   const failRef = React.useRef({ count: 0, last: 0 });
   const startedRef = React.useRef(false);
+
+  // Confirm the scan, stop the camera, then bounce back to the list.
+  const finishSuccess = React.useCallback((msg: string) => {
+    setResult(null);
+    setSuccess(msg);
+    scannerRef.current?.stop?.().catch(() => {});
+    setTimeout(() => router.push(storeId ? "/store/deliveries" : "/consignor/shipments"), 1800);
+  }, [router, storeId]);
 
   const handle = React.useCallback(async (code: string) => {
     if (lock.current) return;
@@ -55,14 +64,13 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
         setResult(er);
         setTimeout(() => { setResult((cur) => (cur === er ? null : cur)); lock.current = false; }, 2500);
       } else {
-        setFlash(`Dispatched ${r.pkg_code} → ${r.store_name}`);
         router.refresh();
-        setTimeout(() => { setFlash(null); lock.current = false; }, 1400);
+        finishSuccess(`Dispatched ${r.pkg_code} → ${r.store_name}`);
       }
       return;
     }
     setResult(r); // return / receive — stays until the user resolves
-  }, [router]);
+  }, [router, finishSuccess]);
 
   const startCamera = React.useCallback(async () => {
     try {
@@ -112,6 +120,20 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
     if (!res.ok) { setResult({ kind: "error", message: res.error }); return; }
     setCart([]); setFlash("Sale recorded"); router.refresh();
     setTimeout(() => setFlash(null), 1200);
+  }
+
+  if (success) {
+    return (
+      <div className="mx-auto max-w-xl">
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+            <span className="flex h-16 w-16 animate-in items-center justify-center rounded-full bg-ok text-ok-foreground"><Check className="h-8 w-8" /></span>
+            <div className="text-lg font-semibold">{success}</div>
+            <p className="text-sm text-muted-foreground">Scanned — taking you back…</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -185,7 +207,7 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
               const res = await receiveReturnPackage(result.id, result.lines.map((l) => ({ line_id: l.line_id, qty_received: l.qty_expected })));
               setBusy(false);
               if (!res.ok) { setResult({ kind: "error", message: res.error }); return; }
-              setFlash("Return received"); router.refresh(); closeResult();
+              router.refresh(); finishSuccess(`Return ${result.pkg_code} received`);
             }}>{busy ? "Receiving…" : "Confirm received"}</Button>
             <Button variant="ghost" onClick={closeResult}>Cancel</Button>
           </div>
@@ -196,6 +218,7 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
         <PackageManifestModal
           pkg={{ id: result.package.id, pkg_code: result.package.pkg_code, consignor_name: result.package.consignor_name, units: result.package.units, lines: result.package.lines }}
           onClose={closeResult}
+          onDone={() => finishSuccess(`${result.package.pkg_code} received`)}
         />
       ) : null}
     </div>
