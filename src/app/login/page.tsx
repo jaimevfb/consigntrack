@@ -11,34 +11,15 @@ import { Wordmark } from "@/components/brand";
 
 export default function AuthPage() {
   return (
-    <main className="grid min-h-screen lg:grid-cols-2">
-      {/* Brand panel */}
-      <section className="relative hidden flex-col justify-between overflow-hidden p-12 text-white lg:flex xl:p-16">
-        <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-[#3B82F6] via-[#4356E0] to-[#4F46E5]" />
-        <div aria-hidden className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "24px 24px" }} />
-        <div aria-hidden className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
-
-        <div className="relative z-10">
-          <Wordmark inverted className="text-white [&_span]:text-white" />
-        </div>
-        <div className="relative z-10">
-          <h1 className="font-serif text-5xl font-semibold leading-[1.05] xl:text-6xl">
-            Consignment,<br />managed with clarity.
-          </h1>
-          <p className="mt-5 max-w-sm text-base text-white/75">
-            One shared record for consignors and stores — stock, sales, and settlements.
-          </p>
-        </div>
-        <p className="relative z-10 text-sm text-white/60">Made for independent makers &amp; retailers.</p>
-      </section>
-
-      {/* Sign-in */}
-      <section className="flex items-center justify-center bg-background px-6 py-12">
-        <div className="w-full max-w-sm">
-          <div className="mb-10 lg:hidden"><Wordmark /></div>
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 py-12">
+      {/* subtle brand backdrop */}
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-[-10%] h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
+      <div className="relative z-10 w-full max-w-sm">
+        <div className="mb-8 flex justify-center"><Wordmark /></div>
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-card sm:p-7">
           <LoginForm />
         </div>
-      </section>
+      </div>
     </main>
   );
 }
