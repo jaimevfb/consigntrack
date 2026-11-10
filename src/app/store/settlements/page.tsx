@@ -66,31 +66,8 @@ export default async function StorePartnersSettlementsPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-base">Partners</CardTitle></CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader><TableRow><TableHead>Consignor</TableHead><TableHead className="text-right">Commission</TableHead><TableHead>Cadence</TableHead><TableHead>Terms</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {agr.map((a) => (
-                  <TableRow key={a.id}>
-                    <TableCell className="font-medium">{a.consignors?.name ?? "—"}</TableCell>
-                    <TableCell className="tnum text-right">{a.commission_pct}%</TableCell>
-                    <TableCell className="capitalize">{a.settlement_cadence}</TableCell>
-                    <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{a.consignment_period_days}d · {a.damage_liability}-liable · {a.end_of_period_action}</TableCell>
-                  </TableRow>
-                ))}
-                {agr.length === 0 ? <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground">No active agreements.</TableCell></TableRow> : null}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <GenerateSettlementForm agreements={agreementOptions} />
-
-      <Card>
+      <div className="grid items-start gap-6 lg:grid-cols-3">
+      <Card className="lg:col-span-2">
         <CardHeader className="pb-2"><CardTitle className="text-base">Settlements</CardTitle></CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -142,6 +119,26 @@ export default async function StorePartnersSettlementsPage() {
           </div>
         </CardContent>
       </Card>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-base">Partners</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {agr.map((a) => (
+                <div key={a.id} className="rounded-xl border border-border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{a.consignors?.name ?? "—"}</span>
+                    <span className="tnum shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{a.commission_pct}%</span>
+                  </div>
+                  <div className="mt-1 text-xs capitalize text-muted-foreground">{a.settlement_cadence} · {a.consignment_period_days}d · {a.damage_liability}-liable · {a.end_of_period_action}</div>
+                </div>
+              ))}
+              {agr.length === 0 ? <p className="py-4 text-center text-sm text-muted-foreground">No active agreements.</p> : null}
+            </CardContent>
+          </Card>
+          <GenerateSettlementForm agreements={agreementOptions} />
+        </div>
+      </div>
     </div>
   );
 }
