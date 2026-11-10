@@ -1,0 +1,67 @@
+# ConsignTrack — Consignee Portal Refactor Notes
+
+Phase 0 audit (read-only). Status: **paused for a scope decision** — see "Conflicts" at the end.
+
+## 1. Stack
+
+- **Framework:** Next.js 14 (App Router, React Server Components + Server Actions), TypeScript.
+- **Backend/DB:** Supabase (PostgreSQL 17). Data access is server-side via `@supabase/ssr`; business rules live in PL/pgSQL RPCs + triggers. RLS on every table.
+- **State:** server components fetch directly; mutations are server actions in `src/app/_actions/*` calling RPCs. No client store.
+- **Routing:** App Router folders under `src/app/{admin,consignor,store}`. Three portals share one schema and one component library (`src/components`).
+- **Styling:** Tailwind + CSS-variable tokens (`globals.css`), shadcn-style primitives.
+
+## 2. Where the numbers come from — why 27 ≠ 2
+
+There are **two parallel stock systems** in the DB today:
+
+| System | Tables | Unit |
+|---|---|---|
+| **Quantity ledger** | `stock_movements` (append-only) → `stock_levels` (stored derived `qty_on_hand`) | per SKU/store/consignor |
+| **Unit serialization** | `items` (one row per physical unit, `CT-XXXXXX` code + `qr_token`) + `scan_events` | per unit |
+
+- **"Items on hand" = 27** → `getStoreDashboard()` (`src/lib/data.ts:171`) sums `stock_levels.qty_on_hand` for the store.
+- **"In Custody" = 2** → `CustodySummary` ← `getItemStatusCounts()` (`src/lib/items-data.ts:84`) counts `items` by `status` (`received_confirmed` + `listed`). It calls `getItems()` which is **not store-scoped**, so it also counts across stores — a second bug.
+
+They disagree because they read different tables that are only loosely kept in sync (migration `0011_item_ledger_sync` wires some of it). This is exactly the single-source-of-truth problem the refactor targets.
+
+Screen-by-screen stock sources:
+- Dashboard "Items on hand" → `stock_levels`. Custody widget → `items` status counts.
+- Inventory (`/store/inventory`) → `stock_levels`.
+- Sales oversell guard (`record_sale` RPC, BR1) → `stock_levels`.
+- Deliveries (`/store/deliveries`) → `deliveries` + mints `items`.
+- Returns (`/store/returns`) → `returns` table + `stock_movements`.
+- Item records / Scan (`/store/items`, `/store/scan`) → `items` + `scan_events`.
+
+## 3. Serialization / chain-of-custody inventory (what Phase 2 would delete)
+
+Code: `src/app/_actions/items.ts`, `src/lib/items-data.ts`, `src/components/item-detail-view.tsx`, `item-lifecycle.tsx` (LifecycleStepper, CustodyTimeline), `custody-summary.tsx`, `scan-panel.tsx`, `src/app/store/items`, `src/app/store/scan`, `src/app/consignor/items`, `src/app/consignor/scan`, `src/app/admin/items`, `admin/exceptions`.
+DB: `items`, `scan_events`, `disputes`, `exceptions`; migrations `0009`,`0010`,`0011`,`0013` (delivery→items pipeline), parts of `0015`,`0016`.
+`CT-` codes + custody are read by **both** the store and the consignor portals.
+
+## 4. Current tabs (12 store → target 6)
+
+Dashboard · Analytics · Catalog · Scan items · Item records · Sales · Deliveries · Inventory · Returns · Business partners · Settlements · Reports.
+Target: Dashboard(+Analytics) · Deliveries & Receiving · Sales · Inventory & Catalog · Returns · Partners & Settlements.
+
+## 5. What already matches the target model (reuse, don't rebuild)
+
+- `agreements` (+ `commission_overrides`) already hold commission %, cadence, period, liability — matches the spec's `agreements`. Commission is already read from here, not from products. ✅
+- `products` already SKU-keyed, no quantity fields, consignor-owned, read-only to stores via RLS. ✅ (unit_of_measure exists.)
+- `deliveries` + `delivery_items` already ARE a package/line model (consignor→store, qty per SKU) — minus PKG- codes, direction, and the receiving state machine.
+- `stock_movements` is already an append-only ledger — close to the spec's `ledger_entries` but with a different `movement_type` vocabulary and a **stored** `stock_levels` sibling.
+- Primary color is already `#2563EB`-family blue; aesthetic constraint is satisfied.
+
+## Conflicts with the prompt (Phase 0 stop point)
+
+**A — BLOCKER: the model is shared by both portals; the consignee side can't be refactored in isolation.**
+The prompt scopes this to the Consignee Portal and puts the consignor portal out of scope ("just don't break its reads"). But `items`/`scan_events` and the item-minting delivery flow are the **consignor portal's core** (its Item records, Scan, item detail, custody, and the Deliveries screen that *creates* the packages all run on `items`). Phase 2 ("delete all serialization, grep returns zero `CT-`") **will break the consignor portal's reads and its create-delivery workflow**, which Phase-0 scope forbids. These two instructions are mutually exclusive as written.
+
+**B — `ledger_entries` vs existing `stock_movements` + stored `stock_levels`.** The spec wants on-hand computed purely as Σ ledger (a view/function) and "delete every other stock computation," but a stored `stock_levels` table exists and is read by Sales/Inventory/Dashboard. Adaptable (repurpose `stock_movements`, drop stored `stock_levels` for a view), but it's a design choice to confirm.
+
+**C — `packages` vs `deliveries`.** `deliveries`/`delivery_items` should become `packages`/`package_lines` (add `pkg_code`, `direction`, receiving states, `qty_received`/`qty_disputed`). This again edits the flow the consignor uses to build a delivery → ties back to A.
+
+**D — Returns.** Existing `returns` table + manual form would be replaced by `RET-` packages + `RETURN_OUT` ledger entries; existing returns need migrating.
+
+### Recommended options to unblock A
+1. **Expand scope to the shared ledger (recommended).** Migrate *both* portals onto the package/ledger model in this refactor — it is physically one system, and the "unit vs quantity" seam is the actual root bug. The consignor's deliveries become outbound packages; its Item-records/Scan/custody screens are replaced by package + ledger views. Larger, but it's the only way to truly delete serialization and reach one source of truth.
+2. **Dual-model with a compatibility layer.** Build `packages`/`ledger_entries` for the consignee side only; keep `items`/`scan_events` alive for the consignor portal behind an adapter so its reads don't break. Honors the stated scope, but leaves two models running (doesn't kill the root bug) and is more total code.
