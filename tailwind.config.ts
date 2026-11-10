@@ -17,23 +17,26 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        // System serif for headings — deliberately NOT Inter/sans.
+        // Standardized on Helvetica across the whole UI (headings included) for a
+        // single, neutral SaaS typeface. `serif` is kept as an alias pointing at
+        // the same stack so existing `font-serif` headings render in Helvetica too.
         serif: [
-          "Iowan Old Style",
-          "Palatino Linotype",
-          "Palatino",
-          "Georgia",
-          "Cambria",
-          "Times New Roman",
-          "serif",
+          "Helvetica Neue",
+          "Helvetica",
+          "Arial",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "sans-serif",
         ],
         sans: [
+          "Helvetica Neue",
+          "Helvetica",
+          "Arial",
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
           "Roboto",
-          "Helvetica Neue",
-          "Arial",
           "sans-serif",
         ],
         // Monospace for numbers, IDs, SKUs, labels.

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SettlementStatusPill } from "@/components/status-pill";
 import { RowActionButton } from "@/components/row-action-button";
+import { PaymentReceipt } from "@/components/payment-receipt";
 import { formatPHP, formatDate } from "@/lib/utils";
 
 export default async function ConsignorSettlementsPage() {
@@ -11,7 +12,7 @@ export default async function ConsignorSettlementsPage() {
   const supabase = createClient();
   const { data } = await supabase
     .from("settlements")
-    .select("*, agreements!inner(stores(name)), payments(paid_at, confirmed_at)")
+    .select("*, agreements!inner(stores(name)), payments(paid_at, confirmed_at, method, reference, amount)")
     .order("period_end", { ascending: false });
 
   const rows = (data ?? []) as Array<{
@@ -25,7 +26,13 @@ export default async function ConsignorSettlementsPage() {
     net_payable: number;
     status: string;
     agreements: { stores: { name: string } | null } | null;
-    payments: { paid_at: string | null; confirmed_at: string | null }[];
+    payments: {
+      paid_at: string | null;
+      confirmed_at: string | null;
+      method: string | null;
+      reference: string | null;
+      amount: number | null;
+    }[];
   }>;
 
   return (
@@ -50,6 +57,7 @@ export default async function ConsignorSettlementsPage() {
                 <TableHead className="text-right">Damage</TableHead>
                 <TableHead className="text-right">Net payable</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Payment</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -77,6 +85,9 @@ export default async function ConsignorSettlementsPage() {
                     <TableCell>
                       <SettlementStatusPill status={s.status} />
                     </TableCell>
+                    <TableCell>
+                      <PaymentReceipt method={payment?.method ?? null} reference={payment?.reference ?? null} />
+                    </TableCell>
                     <TableCell className="text-right">
                       {canConfirm ? (
                         <RowActionButton
@@ -95,7 +106,7 @@ export default async function ConsignorSettlementsPage() {
               })}
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center text-sm text-muted-foreground">
                     No settlements yet.
                   </TableCell>
                 </TableRow>

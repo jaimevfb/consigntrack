@@ -2,7 +2,8 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { GenerateSettlementForm, type AgreementOption } from "@/components/generate-settlement-form";
 import { SettlementStatusPill } from "@/components/status-pill";
-import { RowActionButton } from "@/components/row-action-button";
+import { SettlementPayDialog } from "@/components/settlement-pay-dialog";
+import { PaymentReceipt } from "@/components/payment-receipt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPHP, formatDate } from "@/lib/utils";
@@ -22,7 +23,7 @@ export default async function StoreSettlementsPage() {
       .eq("is_active", true),
     supabase
       .from("settlements")
-      .select("*, agreements!inner(consignors(name)), payments(paid_at, confirmed_at)")
+      .select("*, agreements!inner(consignors(name)), payments(paid_at, confirmed_at, method, reference, amount)")
       .order("period_end", { ascending: false }),
   ]);
 
@@ -48,7 +49,13 @@ export default async function StoreSettlementsPage() {
     net_payable: number;
     status: string;
     agreements: { consignors: { name: string } | null } | null;
-    payments: { paid_at: string | null; confirmed_at: string | null }[];
+    payments: {
+      paid_at: string | null;
+      confirmed_at: string | null;
+      method: string | null;
+      reference: string | null;
+      amount: number | null;
+    }[];
   }>;
 
   return (
@@ -77,6 +84,7 @@ export default async function StoreSettlementsPage() {
                   <TableHead>Period</TableHead>
                   <TableHead className="text-right">Net payable</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Payment</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -94,9 +102,16 @@ export default async function StoreSettlementsPage() {
                       <TableCell>
                         <SettlementStatusPill status={s.status} />
                       </TableCell>
+                      <TableCell>
+                        <PaymentReceipt method={payment?.method ?? null} reference={payment?.reference ?? null} />
+                      </TableCell>
                       <TableCell className="text-right">
                         {canMarkPaid ? (
-                          <RowActionButton kind="markPaid" id={s.id} label="Mark paid" pendingLabel="Saving…" />
+                          <SettlementPayDialog
+                            settlementId={s.id}
+                            amount={s.net_payable}
+                            consignorName={s.agreements?.consignors?.name ?? "the consignor"}
+                          />
                         ) : s.status === "paid" && !payment?.confirmed_at ? (
                           <span className="text-xs text-muted-foreground">Awaiting consignor</span>
                         ) : (
@@ -108,7 +123,7 @@ export default async function StoreSettlementsPage() {
                 })}
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                       No settlement statements have been generated. Select an active business agreement to create one.
                     </TableCell>
                   </TableRow>

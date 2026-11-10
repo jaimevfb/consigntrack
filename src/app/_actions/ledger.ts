@@ -150,9 +150,17 @@ export async function generateSettlement(input: unknown): Promise<ActionResult> 
   return { ok: true };
 }
 
-export async function markSettlementPaid(settlementId: string): Promise<ActionResult> {
+export async function markSettlementPaid(
+  settlementId: string,
+  method: string = "gcash",
+  reference?: string,
+): Promise<ActionResult> {
   const supabase = createClient();
-  const { error } = await supabase.rpc("mark_settlement_paid", { p_settlement_id: settlementId });
+  const { error } = await supabase.rpc("mark_settlement_paid", {
+    p_settlement_id: settlementId,
+    p_method: method,
+    p_reference: reference ?? null,
+  });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/store/settlements");
   revalidatePath("/consignor/settlements");

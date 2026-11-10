@@ -18,6 +18,7 @@ import {
   Bell,
   Tag,
   Handshake,
+  Users,
   Menu,
   X,
 } from "lucide-react";
@@ -42,6 +43,8 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   exceptions: AlertTriangle,
   products: Tag,
   agreements: Handshake,
+  accounts: Users,
+  catalog: Tag,
 };
 
 export interface NavItem {
