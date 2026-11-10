@@ -53,9 +53,6 @@ export default async function ConsignorSettlementsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl">Settlements</h1>
-        <p className="text-sm text-muted-foreground">
-          Statements per store and period. Confirm receipt once a store marks a payment paid.
-        </p>
       </div>
 
       <Card>

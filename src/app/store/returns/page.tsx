@@ -24,7 +24,6 @@ export default async function StoreReturnsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl">Returns</h1>
-        <p className="text-sm text-muted-foreground">Build a return from on-hand stock to get its QR label. Stock leaves only when you <strong>scan the QR to dispatch</strong> — then the consignor scans to receive it. No stray taps.</p>
       </div>
       <ReturnBuilder storeId={profile.store_id} consignors={[...byConsignor.values()]} existing={existing} />
     </div>

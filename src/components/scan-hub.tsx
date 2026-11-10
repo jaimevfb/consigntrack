@@ -27,6 +27,7 @@ export function ScanHub({ storeId }: { storeId?: string | null }) {
   const doneRef = React.useRef(false);
   const scannerRef = React.useRef<{ stop: () => Promise<void>; clear?: () => void } | null>(null);
   const failRef = React.useRef({ count: 0, last: 0 });
+  const armedRef = React.useRef(false);
   const startedRef = React.useRef(false);
 
   // Tear the camera down safely. html5-qrcode's stop() THROWS (sync) when it
@@ -94,9 +95,14 @@ export function ScanHub({ storeId }: { storeId?: string | null }) {
       const { Html5Qrcode } = await import("html5-qrcode");
       const h = new Html5Qrcode("qr-reader", { verbose: false });
       scannerRef.current = h;
+      // Not armed until the camera has seen a QR-free frame (or a short grace
+      // period). This stops a QR that's already in view the instant the camera
+      // opens from auto-firing — it only acts on a QR you deliberately present.
+      armedRef.current = false;
       await h.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 230, height: 230 } },
-        (decoded: string) => { failRef.current.count = 0; handle(decoded); },
+        (decoded: string) => { if (!armedRef.current) return; failRef.current.count = 0; handle(decoded); },
         () => {
+          armedRef.current = true; // a frame with no decodable QR → ready for the next one you show
           // Reveal the typed fallback only after the scanner fails ~3 times.
           const now = Date.now();
           if (now - failRef.current.last > 2500) {
@@ -106,6 +112,8 @@ export function ScanHub({ storeId }: { storeId?: string | null }) {
           }
         });
       setCamState("on");
+      // Fallback: arm after a moment so a steadily-held QR still scans.
+      setTimeout(() => { armedRef.current = true; }, 1500);
     } catch {
       setCamState("error");
       setShowTyped(true); // camera unavailable → typing is the only way

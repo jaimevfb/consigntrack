@@ -69,7 +69,7 @@ export function SettlementStatementButton({ statement: s, label = "Statement" }:
       {open ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
           <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col rounded-t-2xl bg-card shadow-pop sm:rounded-2xl">
+          <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col rounded-t-2xl bg-card text-left shadow-pop sm:rounded-2xl">
             <div className="flex items-start justify-between border-b border-border p-5">
               <div>
                 <div className="flex items-center gap-2"><h3 className="text-base font-semibold">Settlement statement</h3><span className="tnum rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">#{ref}</span></div>
@@ -78,60 +78,82 @@ export function SettlementStatementButton({ statement: s, label = "Statement" }:
               <button aria-label="Close" onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Info label="Period" value={`${formatDate(s.period_start)} – ${formatDate(s.period_end)}`} sub={`Generated ${formatDate(s.created_at)}`} />
-                <Info label="Terms" value={`${s.commission_pct}% · ${s.cadence}`} sub={`${s.consignment_period_days}d · ${s.damage_liability}-liable`} />
-                <div className="rounded-lg border border-border p-3">
-                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Status</div>
-                  <div className="mt-1"><SettlementStatusPill status={s.status} /></div>
+            <div className="flex-1 space-y-5 overflow-y-auto p-5">
+              {/* Meta bar: one row, evenly divided, consistently left-aligned */}
+              <div className="grid grid-cols-1 overflow-hidden rounded-xl border border-border sm:grid-cols-3 sm:divide-x divide-border [&>div]:border-b [&>div]:border-border sm:[&>div]:border-b-0">
+                <Meta label="Period">
+                  <div className="font-medium">{formatDate(s.period_start)} – {formatDate(s.period_end)}</div>
+                  <div className="text-xs text-muted-foreground">Generated {formatDate(s.created_at)}</div>
+                </Meta>
+                <Meta label="Terms">
+                  <div className="font-medium">{s.commission_pct}% commission · <span className="capitalize">{s.cadence}</span></div>
+                  <div className="text-xs text-muted-foreground">{s.consignment_period_days}-day period · {s.damage_liability}-liable</div>
+                </Meta>
+                <Meta label="Status">
+                  <SettlementStatusPill status={s.status} />
+                </Meta>
+              </div>
+
+              {/* Line items */}
+              <div>
+                <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Line items</div>
+                <div className="overflow-hidden rounded-xl border border-border">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40 text-xs text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium">Product</th>
+                        <th className="px-3 py-2 text-right font-medium">Qty</th>
+                        <th className="px-3 py-2 text-right font-medium">Gross</th>
+                        <th className="px-3 py-2 text-right font-medium">Commission</th>
+                        <th className="px-3 py-2 text-right font-medium">Net</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {s.lines.length ? s.lines.map((l, i) => (
+                        <tr key={i}>
+                          <td className="px-3 py-2"><div className="font-medium">{l.name}</div><div className="tnum text-xs text-muted-foreground">{l.sku} · {formatPHP(l.unit_price)} · {l.commission_pct}%</div></td>
+                          <td className="tnum px-3 py-2 text-right">{l.qty_sold}</td>
+                          <td className="tnum px-3 py-2 text-right">{formatPHP(l.gross)}</td>
+                          <td className="tnum px-3 py-2 text-right text-muted-foreground">−{formatPHP(l.commission)}</td>
+                          <td className="tnum px-3 py-2 text-right font-medium">{formatPHP(l.gross - l.commission)}</td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan={5} className="px-3 py-6 text-center text-sm text-muted-foreground">Line detail not recorded for this legacy statement — totals below.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
-              <div className="mt-4 overflow-hidden rounded-xl border border-border">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-xs text-muted-foreground">
-                    <tr><th className="p-2 text-left font-medium">Product</th><th className="p-2 text-right font-medium">Qty</th><th className="p-2 text-right font-medium">Gross</th><th className="p-2 text-right font-medium">Comm</th><th className="p-2 text-right font-medium">Net</th></tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {s.lines.length ? s.lines.map((l, i) => (
-                      <tr key={i}>
-                        <td className="p-2"><div className="font-medium">{l.name}</div><div className="tnum text-xs text-muted-foreground">{l.sku} · {formatPHP(l.unit_price)} · {l.commission_pct}%</div></td>
-                        <td className="tnum p-2 text-right">{l.qty_sold}</td>
-                        <td className="tnum p-2 text-right">{formatPHP(l.gross)}</td>
-                        <td className="tnum p-2 text-right text-muted-foreground">−{formatPHP(l.commission)}</td>
-                        <td className="tnum p-2 text-right font-medium">{formatPHP(l.gross - l.commission)}</td>
-                      </tr>
-                    )) : (
-                      <tr><td colSpan={5} className="p-4 text-center text-sm text-muted-foreground">Line detail not recorded for this legacy statement — totals below.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="mt-4 space-y-1.5 rounded-xl border border-border p-4 text-sm">
-                <Row label="Gross sales" value={formatPHP(s.gross_sales)} />
-                <Row label="Commission" value={`− ${formatPHP(s.commission)}`} muted />
-                {s.returns_total ? <Row label="Returns" value={`− ${formatPHP(s.returns_total)}`} muted /> : null}
-                {s.damage_total ? <Row label="Damage" value={`− ${formatPHP(s.damage_total)}`} muted /> : null}
-                <div className="flex items-center justify-between border-t border-border pt-2 text-base font-bold"><span>Net payable</span><span className="tnum">{formatPHP(s.net_payable)}</span></div>
-              </div>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {/* Totals + payment side by side on wide screens */}
+              <div className="grid gap-4 lg:grid-cols-2">
                 <div className="rounded-xl border border-border p-4 text-sm">
-                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Payment</div>
+                  <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Summary</div>
+                  <div className="space-y-1.5">
+                    <Row label="Gross sales" value={formatPHP(s.gross_sales)} />
+                    <Row label="Commission" value={`− ${formatPHP(s.commission)}`} muted />
+                    {s.returns_total ? <Row label="Returns" value={`− ${formatPHP(s.returns_total)}`} muted /> : null}
+                    {s.damage_total ? <Row label="Damage" value={`− ${formatPHP(s.damage_total)}`} muted /> : null}
+                    <div className="flex items-center justify-between border-t border-border pt-2 text-base font-bold"><span>Net payable</span><span className="tnum">{formatPHP(s.net_payable)}</span></div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border p-4 text-sm">
+                  <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Payment</div>
                   {s.payment?.method ? (
                     <>
-                      <div className="mt-1 font-medium">{methodLabel(s.payment.method)}{s.payment.reference ? <span className="tnum text-xs text-muted-foreground"> · {s.payment.reference}</span> : null}</div>
+                      <div className="font-medium">{methodLabel(s.payment.method)}{s.payment.reference ? <span className="tnum text-xs text-muted-foreground"> · {s.payment.reference}</span> : null}</div>
                       <div className="text-xs text-muted-foreground">Paid {s.payment.paid_at ? formatDateTime(s.payment.paid_at) : "—"}</div>
-                      {s.payment.confirmed_at ? <div className="text-xs text-ok-foreground">Confirmed {formatDateTime(s.payment.confirmed_at)}</div> : null}
+                      {s.payment.confirmed_at ? <div className="mt-0.5 inline-flex items-center gap-1 text-xs text-ok-foreground"><ShieldCheck className="h-3 w-3" /> Confirmed {formatDateTime(s.payment.confirmed_at)}</div> : null}
                     </>
-                  ) : <div className="mt-1 text-muted-foreground">Not yet paid</div>}
+                  ) : <div className="text-muted-foreground">Not yet paid.</div>}
                 </div>
-                <div className={`flex items-center gap-2 rounded-xl border p-4 text-sm ${reconciled ? "border-ok/40 bg-ok/10 text-ok-foreground" : "border-border text-muted-foreground"}`}>
-                  <ShieldCheck className="h-4 w-4 shrink-0" />
-                  <span>{reconciled ? "Reconciled — line items sum exactly to the statement total." : "Audit trail recorded; line-level detail unavailable for this statement."}</span>
-                </div>
+              </div>
+
+              {/* Reconciliation / audit banner */}
+              <div className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-sm ${reconciled ? "border-ok/40 bg-ok/10 text-ok-foreground" : "border-border text-muted-foreground"}`}>
+                <ShieldCheck className="h-4 w-4 shrink-0" />
+                <span>{reconciled ? `Reconciled — ${s.lines.length} line item${s.lines.length === 1 ? "" : "s"} sum exactly to the statement total.` : "Audit trail recorded; line-level detail is unavailable for this legacy statement."}</span>
               </div>
             </div>
 
@@ -146,12 +168,11 @@ export function SettlementStatementButton({ statement: s, label = "Statement" }:
   );
 }
 
-function Info({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Meta({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-border p-3">
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="mt-1 text-sm font-medium">{value}</div>
-      {sub ? <div className="text-xs text-muted-foreground">{sub}</div> : null}
+    <div className="p-3.5">
+      <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-sm">{children}</div>
     </div>
   );
 }

@@ -40,7 +40,6 @@ export default async function StoreDeliveriesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl">Deliveries &amp; Receiving</h1>
-          <p className="text-sm text-muted-foreground">Confirm incoming packages at the dock — one scan moves every SKU inside the box.</p>
         </div>
         <Button asChild><Link href="/scan"><ScanLine className="h-4 w-4" /> Scan a package</Link></Button>
       </div>

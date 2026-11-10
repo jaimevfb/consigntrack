@@ -21,7 +21,6 @@ export default async function ConsignorDashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Your whole network at a glance — where every unit sits and what&rsquo;s owed.</p>
         </div>
         <Button asChild size="sm"><Link href="/consignor/shipments"><PackageSearch className="h-4 w-4" /> Build shipment</Link></Button>
       </div>

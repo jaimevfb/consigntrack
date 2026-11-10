@@ -58,7 +58,6 @@ export default async function StorePartnersSettlementsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl">Partners &amp; Settlements</h1>
-        <p className="text-sm text-muted-foreground">Your agreements and period statements, computed straight from recorded sales.</p>
       </div>
 
       <Card>

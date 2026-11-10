@@ -49,7 +49,6 @@ export default async function ConsignorShipmentsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl">Shipments</h1>
-        <p className="text-sm text-muted-foreground">Build a package for a store, print its QR, and dispatch it. One scan at the dock moves every SKU inside.</p>
       </div>
       <InboundReturns returns={inboundReturns} />
       <ShipmentBuilder consignorId={profile.consignor_id} stores={stores} skus={skus} history={history} />

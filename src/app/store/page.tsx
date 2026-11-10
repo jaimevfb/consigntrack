@@ -32,7 +32,6 @@ export default async function StoreDashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Your stock, incoming packages, sales, and settlements — one source of truth.</p>
         </div>
         <Button asChild size="sm">
           <Link href="/store/sales"><ShoppingCart className="h-4 w-4" /> Record sale</Link>

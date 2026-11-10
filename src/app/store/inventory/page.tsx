@@ -34,7 +34,6 @@ export default async function StoreInventoryPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl">Inventory &amp; Catalog</h1>
-        <p className="text-sm text-muted-foreground">What you can sell and what needs attention. Prices and commission are set by the agreement.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

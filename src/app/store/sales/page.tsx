@@ -16,7 +16,6 @@ export default async function StoreSalesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl">Sales</h1>
-        <p className="text-sm text-muted-foreground">Scan a SKU or search to build a sale. Only in-stock items are sellable, and quantity can&rsquo;t exceed on-hand.</p>
       </div>
       <SalesTerminal storeId={profile.store_id} skus={skus} />
     </div>

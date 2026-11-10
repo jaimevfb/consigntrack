@@ -23,12 +23,7 @@ export default async function ScanPage() {
         </div>
       </header>
       <main className="px-4 py-6">
-        <div className="mx-auto mb-4 max-w-xl">
-          <h1 className="text-xl font-semibold">Scan</h1>
-          <p className="text-sm text-muted-foreground">
-            One scanner for everything — a <strong>PKG</strong> package, a <strong>RET</strong> return, or a product <strong>SKU</strong>. It knows what to do by the code.
-          </p>
-        </div>
+        <h1 className="mx-auto mb-4 max-w-xl text-center text-xl font-semibold">Scan</h1>
         <ScanHub storeId={storeId} />
       </main>
     </div>
