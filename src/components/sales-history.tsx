@@ -52,17 +52,17 @@ export function SalesHistory({ sales }: { sales: SaleRecord[] }) {
                       <span className="tnum ml-2 text-xs text-muted-foreground">{s.units}u · {s.lines.length} item{s.lines.length === 1 ? "" : "s"}</span>
                     </div>
                   </div>
-                  <table className="w-full text-sm">
-                    <tbody className="divide-y divide-border/60">
-                      {s.lines.map((l, j) => (
-                        <tr key={j}>
-                          <td className="px-3 py-1.5"><span className="font-medium">{l.name}</span> <span className="tnum text-xs text-muted-foreground">{l.sku}</span></td>
-                          <td className="tnum whitespace-nowrap px-3 py-1.5 text-right text-xs text-muted-foreground">{l.qty} × {formatPHP(l.unit_price)}</td>
-                          <td className="tnum w-24 px-3 py-1.5 text-right font-medium">{formatPHP(l.total)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="divide-y divide-border/60">
+                    {s.lines.map((l, j) => (
+                      <div key={j} className="flex items-baseline justify-between gap-3 px-3 py-2">
+                        <div className="min-w-0 truncate">
+                          <span className="text-sm font-medium">{l.name}</span>
+                          <span className="tnum text-xs text-muted-foreground"> · {l.sku} · {l.qty} × {formatPHP(l.unit_price)}</span>
+                        </div>
+                        <span className="tnum shrink-0 text-sm font-medium">{formatPHP(l.total)}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               );
             })}
