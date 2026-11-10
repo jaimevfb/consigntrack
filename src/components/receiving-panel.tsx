@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { PackageCheck, X, Check, AlertTriangle, Truck, QrCode } from "lucide-react";
+import { PackageCheck, X, Check, AlertTriangle, Truck, QrCode, ScanLine } from "lucide-react";
 import { receivePackage, type ReceiveLine } from "@/app/_actions/ledger-ops";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,12 +22,39 @@ function statusLabel(s: string) { return s.replace(/_/g, " ").toLowerCase().repl
 
 export function ReceivingPanel({ awaiting, history }: { awaiting: AwaitingPackage[]; history: HistoryRow[] }) {
   const [active, setActive] = React.useState<AwaitingPackage | null>(null);
+  const [scan, setScan] = React.useState("");
+  const [scanErr, setScanErr] = React.useState<string | null>(null);
+
+  function onScan(e: React.FormEvent) {
+    e.preventDefault();
+    const code = scan.trim().toUpperCase();
+    setScanErr(null);
+    const hit = awaiting.find((p) => p.pkg_code.toUpperCase() === code);
+    setScan("");
+    if (hit) setActive(hit);
+    else setScanErr(`"${code}" isn't a package in transit to your store.`);
+  }
+
   return (
     <div className="space-y-6">
       <Card>
+        <CardContent className="pt-5">
+          <form onSubmit={onScan} className="flex gap-2">
+            <div className="relative flex-1">
+              <ScanLine className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input value={scan} onChange={(e) => setScan(e.target.value)} placeholder="Scan package QR or type its code (PKG-…)" className="pl-8" autoFocus />
+            </div>
+            <Button type="submit"><QrCode className="h-4 w-4" /> Scan</Button>
+          </form>
+          {scanErr ? <p className="mt-2 text-sm text-destructive">{scanErr}</p> : null}
+          <p className="mt-2 text-xs text-muted-foreground">A barcode scanner types the code for you — just scan and it opens the manifest. Typing works too.</p>
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base"><Truck className="h-4 w-4 text-primary" /> Awaiting receipt</CardTitle>
-          <p className="text-xs text-muted-foreground">Packages in transit to your store. Scan or tap to open the manifest.</p>
+          <p className="text-xs text-muted-foreground">Packages in transit to your store. Scan above, or tap one to open the manifest.</p>
         </CardHeader>
         <CardContent>
           {awaiting.length === 0 ? (
