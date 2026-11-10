@@ -40,10 +40,10 @@ export default async function StoreDashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiTile icon={Boxes} label="Active consignment stock" hint={`${formatNumber(dash.activeUnits)} units on hand`} value={formatPHP(dash.activeValue)} />
-        <KpiTile icon={PackageSearch} label="Incoming packages" hint="In transit to you" value={formatNumber(dash.incoming)} tone={dash.incoming > 0 ? "ok" : "default"} />
-        <KpiTile icon={Coins} label="Period gross sales" hint={`${formatPHP(dash.commission30)} commission earned`} value={formatPHP(dash.gross30)} />
-        <KpiTile icon={FileClock} label="Settlements due" hint="Net payable pending" value={formatPHP(dash.settlementsDueAmount)} tone={dash.settlementsDueAmount > 0 ? "warn" : "default"} />
+        <KpiTile icon={Boxes} label="Active consignment stock" hint={`${formatNumber(dash.activeUnits)} units on hand`} value={formatPHP(dash.activeValue)} href="/store/inventory" />
+        <KpiTile icon={PackageSearch} label="Incoming packages" hint="In transit to you" value={formatNumber(dash.incoming)} tone={dash.incoming > 0 ? "ok" : "default"} href="/store/deliveries" />
+        <KpiTile icon={Coins} label="Period gross sales" hint={`${formatPHP(dash.commission30)} commission earned`} value={formatPHP(dash.gross30)} href="/store/sales" />
+        <KpiTile icon={FileClock} label="Settlements due" hint="Net payable pending" value={formatPHP(dash.settlementsDueAmount)} tone={dash.settlementsDueAmount > 0 ? "warn" : "default"} href="/store/settlements" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

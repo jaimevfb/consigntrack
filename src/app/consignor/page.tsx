@@ -37,10 +37,10 @@ export default async function ConsignorDashboardPage() {
 
       {/* Network inventory strip */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiTile icon={Warehouse} label="In warehouse" hint={`${formatNumber(net.warehouseUnits)} units`} value={formatPHP(net.warehouseValue)} />
-        <KpiTile icon={Truck} label="In transit" hint="To your stores" value={formatNumber(net.inTransitUnits)} tone={net.inTransitUnits > 0 ? "ok" : "default"} />
-        <KpiTile icon={StoreIcon} label="At stores" hint={`${formatNumber(net.atStoreUnits)} units`} value={formatPHP(net.atStoreValue)} />
-        <KpiTile icon={Coins} label="Unbilled sales" hint="Accruing this cycle" value={formatPHP(net.unbilledSales)} />
+        <KpiTile icon={Warehouse} label="In warehouse" hint={`${formatNumber(net.warehouseUnits)} units`} value={formatPHP(net.warehouseValue)} href="/consignor/insights" />
+        <KpiTile icon={Truck} label="In transit" hint="To your stores" value={formatNumber(net.inTransitUnits)} tone={net.inTransitUnits > 0 ? "ok" : "default"} href="/consignor/shipments" />
+        <KpiTile icon={StoreIcon} label="At stores" hint={`${formatNumber(net.atStoreUnits)} units`} value={formatPHP(net.atStoreValue)} href="/consignor/partners" />
+        <KpiTile icon={Coins} label="Unbilled sales" hint="Accruing this cycle" value={formatPHP(net.unbilledSales)} href="/consignor/settlements" />
       </div>
 
       {/* Net profit trend */}

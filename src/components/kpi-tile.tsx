@@ -1,4 +1,5 @@
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, ArrowDownRight, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** Small inline stat used in analytics card headers (Income/Expenses/Balance style). */
@@ -18,6 +19,7 @@ export function KpiTile({
   hint,
   delta,
   tone = "default",
+  href,
 }: {
   icon?: React.ComponentType<{ className?: string }>;
   label: string;
@@ -26,10 +28,12 @@ export function KpiTile({
   /** signed percentage, e.g. 11 or -4; renders a coloured chip */
   delta?: number | null;
   tone?: "default" | "warn" | "ok";
+  /** when set, the whole tile links here and shows a hover affordance */
+  href?: string;
 }) {
   const up = (delta ?? 0) >= 0;
-  return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+  const inner = (
+    <>
       <div className="flex items-center justify-between">
         <div className="text-sm font-medium text-muted-foreground">{label}</div>
         {Icon ? (
@@ -60,7 +64,19 @@ export function KpiTile({
           </span>
         ) : null}
       </div>
-      {hint ? <div className="mt-1.5 text-xs text-muted-foreground">{hint}</div> : null}
-    </div>
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        {hint ? <div className="text-xs text-muted-foreground">{hint}</div> : <span />}
+        {href ? <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" /> : null}
+      </div>
+    </>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="group block rounded-2xl border border-border bg-card p-5 shadow-card transition-colors hover:border-primary/40 hover:bg-muted/30">
+        {inner}
+      </Link>
+    );
+  }
+  return <div className="rounded-2xl border border-border bg-card p-5 shadow-card">{inner}</div>;
 }
