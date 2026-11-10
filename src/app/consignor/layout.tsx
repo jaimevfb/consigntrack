@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { AppShell } from "@/components/app-shell";
 import { createClient } from "@/lib/supabase/server";
-import { getAlerts } from "@/lib/data";
 
 export default async function ConsignorLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireProfile();
@@ -10,36 +9,32 @@ export default async function ConsignorLayout({ children }: { children: React.Re
     redirect("/");
   }
 
+  const supabase = createClient();
   let scopeLabel = "Consignor";
+  let incoming = 0;
   if (profile.consignor_id) {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("consignors")
-      .select("name")
-      .eq("id", profile.consignor_id)
-      .maybeSingle();
-    if (data?.name) scopeLabel = data.name;
+    const [{ data: c }, { count }] = await Promise.all([
+      supabase.from("consignors").select("name").eq("id", profile.consignor_id).maybeSingle(),
+      supabase.from("packages").select("id", { count: "exact", head: true }).eq("consignor_id", profile.consignor_id).eq("direction", "RETURN").eq("status", "RETURN_IN_TRANSIT"),
+    ]);
+    if (c?.name) scopeLabel = c.name;
+    incoming = count ?? 0;
   }
-  const alerts = await getAlerts();
-  const alertCount = alerts.counts.overdue + alerts.counts.discrepancies + alerts.counts.aged + alerts.counts.low;
 
   return (
     <AppShell
       role={profile.role}
       userName={profile.full_name}
       scopeLabel={scopeLabel}
-      alertCount={alertCount}
-      alertHref="/consignor"
+      alertCount={incoming}
+      alertHref="/consignor/shipments"
       nav={[
         { href: "/consignor", label: "Dashboard", icon: "dashboard" },
-        { href: "/consignor/analytics", label: "Analytics", icon: "analytics" },
-        { href: "/consignor/items", label: "Item records", icon: "items" },
-        { href: "/consignor/scan", label: "Scan items", icon: "scan" },
-        { href: "/consignor/products", label: "Products", icon: "products" },
-        { href: "/consignor/partners", label: "Business partners", icon: "agreements" },
-        { href: "/consignor/deliveries", label: "Deliveries", icon: "deliveries" },
+        { href: "/consignor/products", label: "Catalog", icon: "catalog" },
+        { href: "/consignor/shipments", label: "Shipments", icon: "deliveries" },
+        { href: "/consignor/partners", label: "Stores & Agreements", icon: "agreements" },
         { href: "/consignor/settlements", label: "Settlements", icon: "settlements" },
-        { href: "/consignor/reports", label: "Reports", icon: "reports" },
+        { href: "/consignor/analytics", label: "Insights", icon: "analytics" },
       ]}
     >
       {children}
