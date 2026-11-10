@@ -62,14 +62,14 @@ export function ReceivingPanel({ awaiting, history }: { awaiting: AwaitingPackag
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {awaiting.map((p) => (
-                <button key={p.id} onClick={() => setActive(p)}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary hover:bg-accent/40">
+                <div key={p.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
                   <div>
                     <div className="tnum font-semibold">{p.pkg_code}</div>
                     <div className="text-xs text-muted-foreground">{p.consignor_name} · {p.units} units</div>
                   </div>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-accent-foreground"><QrCode className="h-4 w-4" /></span>
-                </button>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"><ScanLine className="h-3 w-3" /> scan to receive</span>
+                </div>
               ))}
             </div>
           )}

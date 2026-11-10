@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { PackagePlus, Plus, Trash2, Printer, Truck, Check } from "lucide-react";
+import { PackagePlus, Plus, Trash2, Printer, Truck, ScanLine } from "lucide-react";
 import { createOutboundPackage, dispatchPackageAction } from "@/app/_actions/ledger-ops";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,8 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
   const [qty, setQty] = React.useState<Record<string, number>>({});
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
+  const [dispatchScan, setDispatchScan] = React.useState("");
+  const [dispatchErr, setDispatchErr] = React.useState<string | null>(null);
 
   const lines = skus.filter((s) => (qty[s.sku_id] ?? 0) > 0);
   const totalUnits = lines.reduce((a, s) => a + qty[s.sku_id], 0);
@@ -41,9 +43,15 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
     setQty({}); router.refresh();
   }
 
-  async function dispatch(id: string) {
-    const res = await dispatchPackageAction(id);
-    if (!res.ok) setErr(res.error); else router.refresh();
+  async function onDispatchScan(e: React.FormEvent) {
+    e.preventDefault();
+    setDispatchErr(null);
+    const code = dispatchScan.trim().toUpperCase();
+    const hit = history.find((h) => h.status === "PACKED" && h.pkg_code.toUpperCase() === code);
+    setDispatchScan("");
+    if (!hit) { setDispatchErr(`"${code}" isn't a packed package ready to dispatch.`); return; }
+    const res = await dispatchPackageAction(hit.id);
+    if (!res.ok) setDispatchErr(res.error); else router.refresh();
   }
 
   function printLabel(code: string, store: string) {
@@ -109,22 +117,28 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
 
       {packed.length > 0 ? (
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">Ready to dispatch</CardTitle></CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {packed.map((p) => (
-                <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
-                  <div className="flex items-center gap-3">
-                    <span className="rounded-lg border border-border bg-white p-1.5"><QRCodeSVG id={`pkgqr-${p.pkg_code}`} value={p.pkg_code} size={44} level="M" marginSize={0} /></span>
-                    <div><div className="tnum text-sm font-semibold">{p.pkg_code}</div><div className="text-xs text-muted-foreground">→ {p.store_name} · {p.units} units · {formatPHP(p.value)}</div></div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button size="icon" variant="ghost" aria-label="Print" onClick={() => printLabel(p.pkg_code, p.store_name)}><Printer className="h-4 w-4" /></Button>
-                    <Button size="sm" onClick={() => dispatch(p.id)}><Truck className="h-4 w-4" /> Dispatch</Button>
-                  </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Ready to dispatch</CardTitle>
+            <p className="text-xs text-muted-foreground">Scan the package QR at pickup (or type its code) to dispatch — stock only moves on the scan, never a tap.</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <form onSubmit={onDispatchScan} className="flex gap-2">
+              <div className="relative flex-1"><ScanLine className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /><Input value={dispatchScan} onChange={(e) => setDispatchScan(e.target.value)} placeholder="Scan or type a packed PKG code to dispatch" className="pl-8" /></div>
+              <Button type="submit"><Truck className="h-4 w-4" /> Dispatch</Button>
+            </form>
+            {dispatchErr ? <p className="text-sm text-destructive">{dispatchErr}</p> : null}
+            {packed.map((p) => (
+              <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
+                <div className="flex items-center gap-3">
+                  <span className="rounded-lg border border-border bg-white p-1.5"><QRCodeSVG id={`pkgqr-${p.pkg_code}`} value={p.pkg_code} size={44} level="M" marginSize={0} /></span>
+                  <div><div className="tnum text-sm font-semibold">{p.pkg_code}</div><div className="text-xs text-muted-foreground">→ {p.store_name} · {p.units} units · {formatPHP(p.value)}</div></div>
                 </div>
-              ))}
-            </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"><ScanLine className="h-3 w-3" /> scan to dispatch</span>
+                  <Button size="icon" variant="ghost" aria-label="Print label" onClick={() => printLabel(p.pkg_code, p.store_name)}><Printer className="h-4 w-4" /></Button>
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       ) : null}

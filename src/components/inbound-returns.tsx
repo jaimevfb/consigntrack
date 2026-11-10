@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Undo2, Check, QrCode } from "lucide-react";
+import { Undo2, QrCode } from "lucide-react";
 import { receiveReturnPackage } from "@/app/_actions/ledger-ops";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +43,7 @@ export function InboundReturns({ returns }: { returns: InboundReturn[] }) {
         {returns.map((r) => (
           <div key={r.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
             <div><div className="tnum text-sm font-semibold">{r.pkg_code}</div><div className="text-xs text-muted-foreground">← {r.store_name} · {r.units} units</div></div>
-            <Button size="sm" disabled={busy === r.id} onClick={() => receive(r)}><Check className="h-4 w-4" /> {busy === r.id ? "Receiving…" : "Confirm received"}</Button>
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">{busy === r.id ? "Receiving…" : <><QrCode className="h-3 w-3" /> scan to receive</>}</span>
           </div>
         ))}
       </CardContent>
