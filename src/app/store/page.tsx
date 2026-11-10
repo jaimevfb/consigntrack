@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShoppingCart, Boxes, Coins, FileClock, PackageSearch, QrCode, Package } from "lucide-react";
+import { ShoppingCart, Boxes, Coins, FileClock, PackageSearch, Package } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { getStoreDashboardLedger, getStoreSalesAnalytics } from "@/lib/ledger-data";
 import { StaffDashboard } from "@/components/staff-dashboard";
@@ -34,14 +34,9 @@ export default async function StoreDashboardPage() {
           <h1 className="text-2xl">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Your stock, incoming packages, sales, and settlements — one source of truth.</p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link href="/store/deliveries"><QrCode className="h-4 w-4" /> Scan package QR</Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link href="/store/sales"><ShoppingCart className="h-4 w-4" /> Record sale</Link>
-          </Button>
-        </div>
+        <Button asChild size="sm">
+          <Link href="/store/sales"><ShoppingCart className="h-4 w-4" /> Record sale</Link>
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
