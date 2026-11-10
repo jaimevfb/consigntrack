@@ -7,14 +7,12 @@ import { getSessionProfile } from "@/lib/auth";
 import type { ActionResult } from "@/app/_actions/ledger";
 import { UNIT_KEYS } from "@/lib/units";
 
-const CATEGORIES = ["Weaves", "Jewelry", "Home", "Food", "Other"] as const;
-
 // SKUs are system-issued (DB trigger), never accepted from the client.
 const baseShape = {
   name: z.string().min(1, "Name is required"),
   unit_price: z.coerce.number().nonnegative(),
   unit_of_measure: z.enum(UNIT_KEYS).default("piece"),
-  category: z.enum(CATEGORIES).default("Other"),
+  category: z.string().trim().min(1).max(40).default("Other"),
   variant: z.string().optional(),
   description: z.string().optional(),
   cost: z.coerce.number().nonnegative().optional(),
@@ -33,8 +31,8 @@ function payload(d: z.infer<z.ZodObject<typeof baseShape>>) {
     description: d.description?.trim() || null,
     cost: d.cost ?? null,
     photo_url: d.photo_url?.trim() || null,
-    perishable: d.category === "Food" ? true : !!d.perishable,
-    shelf_life_days: d.category === "Food" ? (d.shelf_life_days ?? 180) : (d.shelf_life_days ?? null),
+    perishable: d.category === "Food" || d.category === "Beverages" ? true : !!d.perishable,
+    shelf_life_days: d.category === "Food" || d.category === "Beverages" ? (d.shelf_life_days ?? 180) : (d.shelf_life_days ?? null),
   };
 }
 

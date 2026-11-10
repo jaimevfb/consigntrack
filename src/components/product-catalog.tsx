@@ -15,12 +15,15 @@ import { formatPHP } from "@/lib/utils";
 import { UNITS, unitShort } from "@/lib/units";
 import type { Product } from "@/lib/types";
 
-const CATEGORIES = ["Weaves", "Jewelry", "Home", "Food", "Other"];
-type Draft = { name: string; category: string; variant: string; unit: string; price: string; cost: string; photo_url: string; description: string };
-const EMPTY: Draft = { name: "", category: "Weaves", variant: "", unit: "piece", price: "", cost: "", photo_url: "", description: "" };
+const CATEGORIES = ["Weaves", "Apparel", "Jewelry", "Bags", "Accessories", "Home", "Ceramics", "Woodwork", "Food", "Beverages", "Beauty", "Wellness", "Stationery", "Crafts", "Art", "Toys", "Other"];
+type Draft = { name: string; category: string; otherText: string; variant: string; unit: string; price: string; cost: string; photo_url: string; description: string };
+const EMPTY: Draft = { name: "", category: "Weaves", otherText: "", variant: "", unit: "piece", price: "", cost: "", photo_url: "", description: "" };
 
+function resolveCategory(d: { category: string; otherText: string }) {
+  return d.category === "Other" ? (d.otherText.trim() || "Other") : d.category;
+}
 function toPayload(d: Draft) {
-  return { name: d.name, category: d.category, variant: d.variant || undefined, unit_of_measure: d.unit, unit_price: Number(d.price) || 0, cost: d.cost ? Number(d.cost) : undefined, photo_url: d.photo_url || undefined, description: d.description || undefined };
+  return { name: d.name, category: resolveCategory(d), variant: d.variant || undefined, unit_of_measure: d.unit, unit_price: Number(d.price) || 0, cost: d.cost ? Number(d.cost) : undefined, photo_url: d.photo_url || undefined, description: d.description || undefined };
 }
 
 export function ProductCatalog({ products }: { products: Product[] }) {
@@ -59,6 +62,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
               <Field className="sm:col-span-3" label="Name"><Input value={draft.name} onChange={(e) => set("name", e.target.value)} required /></Field>
               <Field className="sm:col-span-2" label="Category">
                 <Select value={draft.category} onValueChange={(v) => set("category", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                {draft.category === "Other" ? <Input value={draft.otherText} onChange={(e) => set("otherText", e.target.value)} placeholder="Type a category" className="mt-1.5" autoFocus /> : null}
               </Field>
               <Field label="Variant"><Input value={draft.variant} onChange={(e) => set("variant", e.target.value)} placeholder="e.g. Red" /></Field>
               <Field className="sm:col-span-2" label="Unit">
@@ -144,7 +148,7 @@ function EditRow({ product, onDone, onCancel }: { product: Product; onDone: () =
     <TableRow>
       <TableCell><Input value={name} onChange={(e) => setName(e.target.value)} className="h-8" /></TableCell>
       <TableCell className="tnum text-xs text-muted-foreground">{product.sku}</TableCell>
-      <TableCell><div className="w-28"><Select value={category} onValueChange={setCategory}><SelectTrigger className="h-8"><SelectValue /></SelectTrigger><SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div></TableCell>
+      <TableCell><div className="w-32"><Select value={category} onValueChange={setCategory}><SelectTrigger className="h-8"><SelectValue /></SelectTrigger><SelectContent>{(CATEGORIES.includes(category) ? CATEGORIES : [category, ...CATEGORIES]).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div></TableCell>
       <TableCell className="text-sm text-muted-foreground">{unitShort(product.unit_of_measure)}</TableCell>
       <TableCell className="text-right"><Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="h-8 w-24 text-right tnum" />{err ? <div className="text-xs text-destructive">{err}</div> : null}</TableCell>
       <TableCell className="text-right"><div className="inline-flex gap-1"><Button variant="ghost" size="icon" aria-label="Save" disabled={busy} onClick={save}><Check className="h-4 w-4" /></Button><Button variant="ghost" size="icon" aria-label="Cancel" onClick={onCancel}><X className="h-4 w-4" /></Button></div></TableCell>
