@@ -57,7 +57,13 @@ export default async function StorePartnersSettlementsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl">Partners &amp; Settlements</h1>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-2xl">Partners &amp; Settlements</h1>
+          <div className="flex gap-2">
+            <a href="/api/export/settlements" download className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium hover:bg-muted">Export statements (CSV)</a>
+            <a href="/api/export/ledger" download className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium hover:bg-muted">Export ledger (CSV)</a>
+          </div>
+        </div>
       </div>
 
       <Card>

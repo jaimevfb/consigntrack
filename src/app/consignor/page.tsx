@@ -4,6 +4,7 @@ import { requireProfile } from "@/lib/auth";
 import { getConsignorNetwork } from "@/lib/consignor-data";
 import { KpiTile } from "@/components/kpi-tile";
 import { LineChart, RankedBars } from "@/components/charts";
+import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { SettlementStatusPill } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +27,13 @@ export default async function ConsignorDashboardPage() {
         </div>
         <Button asChild size="sm"><Link href="/consignor/shipments"><PackageSearch className="h-4 w-4" /> Build shipment</Link></Button>
       </div>
+
+      <OnboardingChecklist steps={[
+        { label: "Add your first product", hint: "Build your catalogue — a SKU is issued automatically", href: "/consignor/products", done: net.onboarding.products },
+        { label: "Connect a partner store", hint: "Set commission and terms with a store", href: "/consignor/partners", done: net.onboarding.store },
+        { label: "Build & dispatch a shipment", hint: "Pack a package, scan its QR to send it", href: "/consignor/shipments", done: net.onboarding.shipment },
+        { label: "Generate a settlement", hint: "Statement of sales, computed from the ledger", href: "/consignor/settlements", done: net.onboarding.settlement },
+      ]} />
 
       {/* Network inventory strip */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

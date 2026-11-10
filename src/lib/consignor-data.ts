@@ -12,6 +12,7 @@ export interface ConsignorNetwork {
   payoutForecast: { store_name: string; period_end: string; net_payable: number; status: string }[];
   feed: { pkg_code: string; direction: string; status: string; store_name: string; units: number; updated_at: string }[];
   leaderboard: { store_id: string; store_name: string; onHand: number; sold: number; sellThrough: number }[];
+  onboarding: { products: boolean; store: boolean; shipment: boolean; settlement: boolean };
 }
 
 export async function getConsignorNetwork(consignorId: string): Promise<ConsignorNetwork> {
@@ -104,6 +105,12 @@ export async function getConsignorNetwork(consignorId: string): Promise<Consigno
     atStoreUnits, atStoreValue: Math.round(atStoreValue),
     unbilledSales, pendingSettlements: Math.round(pendingSettlements),
     net30: Math.round(net30), netSeries, topProducts, payoutForecast, feed, leaderboard,
+    onboarding: {
+      products: ((prods ?? []) as unknown[]).length > 0,
+      store: ((agreements ?? []) as unknown[]).length > 0,
+      shipment: feed.length > 0,
+      settlement: ((settlements ?? []) as unknown[]).length > 0,
+    },
   };
 }
 
