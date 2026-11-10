@@ -32,11 +32,8 @@ function Landing() {
       <section className="relative overflow-hidden">
         <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-[#0B1020] via-[#2743C9] to-[#F7F8FC]" />
         <div aria-hidden className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)", backgroundSize: "26px 26px" }} />
-        <div className="relative mx-auto max-w-4xl px-6 pb-20 pt-36 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#60A5FA]" /> Consignment operations platform
-          </span>
-          <h1 className="mt-6 font-serif text-4xl font-semibold leading-[1.08] text-white sm:text-5xl md:text-6xl">
+        <div className="relative mx-auto max-w-4xl px-6 pb-20 pt-40 text-center">
+          <h1 className="font-serif text-4xl font-semibold leading-[1.08] text-white sm:text-5xl md:text-6xl">
             Settlements that reconcile<br className="hidden sm:block" /> themselves, the moment a sale lands.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-lg text-white/75">
