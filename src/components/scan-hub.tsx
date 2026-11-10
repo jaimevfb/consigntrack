@@ -24,20 +24,36 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
   const [busy, setBusy] = React.useState(false);
   const [success, setSuccess] = React.useState<string | null>(null);
   const lock = React.useRef(false);
-  const scannerRef = React.useRef<{ stop: () => Promise<void> } | null>(null);
+  const doneRef = React.useRef(false);
+  const scannerRef = React.useRef<{ stop: () => Promise<void>; clear?: () => void } | null>(null);
   const failRef = React.useRef({ count: 0, last: 0 });
   const startedRef = React.useRef(false);
 
-  // Confirm the scan, stop the camera, then bounce back to the list.
+  // Tear the camera down safely. html5-qrcode's stop() THROWS (sync) when it
+  // isn't running, so it must be wrapped — an unhandled throw here crashes the
+  // whole page once the #qr-reader container unmounts on a live camera.
+  const stopScanner = React.useCallback(async () => {
+    const s = scannerRef.current;
+    scannerRef.current = null;
+    if (!s) return;
+    try { await s.stop(); } catch { /* not running */ }
+    try { s.clear?.(); } catch { /* ignore */ }
+  }, []);
+
+  // Confirm the scan: stop the camera FIRST (so html5-qrcode cleans up its own
+  // DOM before React unmounts it), then show success and bounce back.
   const finishSuccess = React.useCallback((msg: string) => {
-    setResult(null);
-    setSuccess(msg);
-    scannerRef.current?.stop?.().catch(() => {});
-    setTimeout(() => router.push(storeId ? "/store/deliveries" : "/consignor/shipments"), 1800);
-  }, [router, storeId]);
+    lock.current = true;
+    doneRef.current = true;
+    void stopScanner().finally(() => {
+      setResult(null);
+      setSuccess(msg);
+      setTimeout(() => router.push(storeId ? "/store/deliveries" : "/consignor/shipments"), 1800);
+    });
+  }, [router, storeId, stopScanner]);
 
   const handle = React.useCallback(async (code: string) => {
-    if (lock.current) return;
+    if (lock.current || doneRef.current) return;
     lock.current = true;
     failRef.current.count = 0; // a QR was read — reset the fallback counter
     const r = await resolveScan(code);
@@ -96,15 +112,15 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
   }, [handle]);
 
   async function stopCamera() {
-    try { await scannerRef.current?.stop(); } catch { /* ignore */ }
-    scannerRef.current = null; setCamState("off");
+    await stopScanner();
+    setCamState("off");
   }
 
   // Deep link: resolve the ?code= on mount.
   React.useEffect(() => { if (initialCode) handle(initialCode); }, [initialCode, handle]);
   // Camera-first: start it automatically.
   React.useEffect(() => { if (!startedRef.current) { startedRef.current = true; startCamera(); } }, [startCamera]);
-  React.useEffect(() => () => { scannerRef.current?.stop?.().catch(() => {}); }, []);
+  React.useEffect(() => () => { void stopScanner(); }, [stopScanner]);
 
   function onTyped(e: React.FormEvent) { e.preventDefault(); const c = typed.trim(); setTyped(""); if (c) handle(c); }
 
