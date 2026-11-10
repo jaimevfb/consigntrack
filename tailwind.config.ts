@@ -21,6 +21,8 @@ const config: Config = {
         // single, neutral SaaS typeface. `serif` is kept as an alias pointing at
         // the same stack so existing `font-serif` headings render in Helvetica too.
         serif: [
+          "var(--font-inter)",
+          "Inter",
           "Helvetica Neue",
           "Helvetica",
           "Arial",
@@ -30,6 +32,8 @@ const config: Config = {
           "sans-serif",
         ],
         sans: [
+          "var(--font-inter)",
+          "Inter",
           "Helvetica Neue",
           "Helvetica",
           "Arial",
@@ -90,8 +94,12 @@ const config: Config = {
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 8px)",
+      },
+      boxShadow: {
+        card: "var(--shadow-card)",
+        pop: "var(--shadow-pop)",
       },
       keyframes: {
         "accordion-down": {
