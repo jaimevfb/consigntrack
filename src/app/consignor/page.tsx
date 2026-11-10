@@ -3,7 +3,7 @@ import { Warehouse, Truck, Store as StoreIcon, Coins, FileClock, ArrowUpRight, P
 import { requireProfile } from "@/lib/auth";
 import { getConsignorNetwork } from "@/lib/consignor-data";
 import { KpiTile } from "@/components/kpi-tile";
-import { GlowLineChart } from "@/components/charts";
+import { LineChart } from "@/components/charts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusPill } from "@/components/status-pill";
@@ -47,7 +47,7 @@ export default async function ConsignorDashboardPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <GlowLineChart points={net.netSeries} height={190} valueLabel={formatPHP} />
+          <LineChart points={net.netSeries} height={190} valueLabel={formatPHP} />
         </CardContent>
       </Card>
 
