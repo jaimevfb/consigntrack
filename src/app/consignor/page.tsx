@@ -91,14 +91,14 @@ export default async function ConsignorDashboardPage() {
           {net.leaderboard.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">No store activity yet.</p> : (
             <div className="space-y-2.5">
               {net.leaderboard.map((s, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <span className="w-28 shrink-0 truncate text-sm font-medium">{s.store_name}</span>
+                <Link key={i} href={`/consignor/stores/${s.store_id}`} className="flex items-center gap-3 rounded-md px-1 py-0.5 -mx-1 hover:bg-muted/50">
+                  <span className="w-28 shrink-0 truncate text-sm font-medium text-primary">{s.store_name}</span>
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                     <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, s.sellThrough)}%` }} />
                   </div>
                   <span className="tnum w-12 text-right text-sm">{s.sellThrough}%</span>
                   <span className="tnum w-20 text-right text-xs text-muted-foreground">{s.sold} sold</span>
-                </div>
+                </Link>
               ))}
             </div>
           )}

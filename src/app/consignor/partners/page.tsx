@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ConnectPartner, type ExistingAgreement } from "@/components/connect-partner";
@@ -50,23 +52,24 @@ export default async function ConsignorStoresPage() {
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader><TableRow><TableHead>Store</TableHead><TableHead className="text-right">Commission</TableHead><TableHead>Terms</TableHead><TableHead className="text-right">On shelf</TableHead><TableHead className="text-right">Shelf value</TableHead><TableHead className="text-right">Owed</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Store</TableHead><TableHead className="text-right">Commission</TableHead><TableHead>Terms</TableHead><TableHead className="text-right">On shelf</TableHead><TableHead className="text-right">Shelf value</TableHead><TableHead className="text-right">Owed</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Monitor</TableHead></TableRow></TableHeader>
               <TableBody>
                 {agreements.map((a) => {
                   const oh = onHandByStore.get(a.store_id) ?? { units: 0, value: 0 };
                   return (
                     <TableRow key={a.store_id}>
-                      <TableCell className="font-medium">{a.stores?.name ?? "—"}</TableCell>
+                      <TableCell className="font-medium"><Link href={`/consignor/stores/${a.store_id}`} className="text-primary hover:underline">{a.stores?.name ?? "—"}</Link></TableCell>
                       <TableCell className="tnum text-right">{a.commission_pct}%</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{a.consignment_period_days}d · {a.damage_liability}-liable · {a.end_of_period_action}</TableCell>
                       <TableCell className="tnum text-right">{formatNumber(Math.max(0, oh.units))}</TableCell>
                       <TableCell className="tnum text-right">{formatPHP(Math.max(0, oh.value))}</TableCell>
                       <TableCell className="tnum text-right">{formatPHP(pendingByStore.get(a.store_id) ?? 0)}</TableCell>
                       <TableCell><StatusPill tone={a.is_active ? "ok" : "neutral"}>{a.is_active ? "Active" : "Inactive"}</StatusPill></TableCell>
+                      <TableCell className="text-right"><Link href={`/consignor/stores/${a.store_id}`} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">Open <ArrowUpRight className="h-3.5 w-3.5" /></Link></TableCell>
                     </TableRow>
                   );
                 })}
-                {agreements.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground">No store partners yet — your administrator connects stores to you.</TableCell></TableRow> : null}
+                {agreements.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground">No store partners yet — your administrator connects stores to you.</TableCell></TableRow> : null}
               </TableBody>
             </Table>
           </div>
