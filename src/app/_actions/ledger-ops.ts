@@ -97,6 +97,15 @@ export async function dispatchPackageAction(packageId: string): Promise<ActionRe
   return { ok: true };
 }
 
+export async function dispatchReturnPackageAction(packageId: string): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("dispatch_return_package", { p_package_id: packageId });
+  if (error) return { ok: false, error: clean(error.message) };
+  revalidatePath("/store/returns");
+  revalidatePath("/consignor/shipments");
+  return { ok: true };
+}
+
 // Consignor side — build + dispatch an outbound package (replaces delivery minting).
 export async function createOutboundPackage(consignorId: string, storeId: string, lines: { sku_id: string; qty: number }[], dispatch = true): Promise<ActionResult & { packageId?: string }> {
   const supabase = createClient();

@@ -6,7 +6,7 @@ import { Wordmark } from "@/components/brand";
 
 export const metadata = { title: "Scan" };
 
-export default async function ScanPage({ searchParams }: { searchParams: { code?: string } }) {
+export default async function ScanPage() {
   const { profile } = await requireProfile();
   const home = homeForRole(profile.role);
   const storeId = profile.role === "store_manager" || profile.role === "store_staff" || profile.role === "admin" ? profile.store_id : null;
@@ -29,7 +29,7 @@ export default async function ScanPage({ searchParams }: { searchParams: { code?
             One scanner for everything — a <strong>PKG</strong> package, a <strong>RET</strong> return, or a product <strong>SKU</strong>. It knows what to do by the code.
           </p>
         </div>
-        <ScanHub initialCode={searchParams.code} storeId={storeId} />
+        <ScanHub storeId={storeId} />
       </main>
     </div>
   );

@@ -45,7 +45,7 @@ export default async function PackageDetailPage({ params }: { params: { id: stri
           </Card>
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-base">Package QR</CardTitle></CardHeader>
-            <CardContent><PackageQrCard code={pkg.pkg_code} from={pkg.consignor_name} to={pkg.store_name} units={pkg.lines.reduce((a, l) => a + l.qty_expected, 0)} /></CardContent>
+            <CardContent><PackageQrCard code={pkg.pkg_code} token={pkg.qr_token} from={pkg.consignor_name} to={pkg.store_name} units={pkg.lines.reduce((a, l) => a + l.qty_expected, 0)} /></CardContent>
           </Card>
         </div>
 

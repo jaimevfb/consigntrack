@@ -18,13 +18,13 @@ export default async function StoreReturnsPage() {
     if (!byConsignor.has(r.consignor_id)) byConsignor.set(r.consignor_id, { consignor_id: r.consignor_id, consignor_name: r.consignor_name, skus: [] });
     byConsignor.get(r.consignor_id)!.skus.push({ sku_id: r.sku_id, sku: r.sku, name: r.name, on_hand: r.on_hand });
   }
-  const existing: ReturnPkg[] = pkgs.map((p) => ({ id: p.id, pkg_code: p.pkg_code, consignor_name: p.consignor_name, units: p.units, status: p.status, updated_at: p.updated_at }));
+  const existing: ReturnPkg[] = pkgs.map((p) => ({ id: p.id, pkg_code: p.pkg_code, qr_token: p.qr_token, consignor_name: p.consignor_name, units: p.units, status: p.status, updated_at: p.updated_at }));
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl">Returns</h1>
-        <p className="text-sm text-muted-foreground">Build a return shipment from on-hand stock. Generating the package moves that stock out and prints a QR label — no return without a package.</p>
+        <p className="text-sm text-muted-foreground">Build a return from on-hand stock to get its QR label. Stock leaves only when you <strong>scan the QR to dispatch</strong> — then the consignor scans to receive it. No stray taps.</p>
       </div>
       <ReturnBuilder storeId={profile.store_id} consignors={[...byConsignor.values()]} existing={existing} />
     </div>

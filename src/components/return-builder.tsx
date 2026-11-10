@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { Printer, PackagePlus, Check, Undo2 } from "lucide-react";
+import { Printer, PackagePlus, Check, Undo2, Truck } from "lucide-react";
 import { buildReturnPackage } from "@/app/_actions/ledger-ops";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import { formatDate } from "@/lib/utils";
 
 export interface ReturnSku { sku_id: string; sku: string; name: string; on_hand: number }
 export interface ReturnConsignor { consignor_id: string; consignor_name: string; skus: ReturnSku[] }
-export interface ReturnPkg { id: string; pkg_code: string; consignor_name: string; units: number; status: string; updated_at: string }
+export interface ReturnPkg { id: string; pkg_code: string; qr_token: string; consignor_name: string; units: number; status: string; updated_at: string }
 
 export function ReturnBuilder({ storeId, consignors, existing }: { storeId: string; consignors: ReturnConsignor[]; existing: ReturnPkg[] }) {
   const router = useRouter();
@@ -37,10 +38,10 @@ export function ReturnBuilder({ storeId, consignors, existing }: { storeId: stri
     setQty({}); setDone(res.packageId ?? null); router.refresh();
   }
 
-  function printLabel(code: string, consignor: string) {
+  function printLabel(code: string, consignor: string, token: string) {
     const w = window.open("", "_blank", "width=420,height=560"); if (!w) return;
     const svg = document.getElementById(`qr-${code}`)?.outerHTML ?? "";
-    w.document.write(`<!doctype html><html><head><title>${code}</title><style>*{font-family:"Helvetica Neue",Arial,sans-serif}body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh}.l{border:2px solid #111;border-radius:12px;padding:24px;text-align:center;width:280px}.c{font-family:ui-monospace,monospace;font-size:24px;font-weight:700;margin-top:10px}</style></head><body onload="window.print()"><div class="l">${svg}<div class="c">${code}</div><div>${consignor}</div><div style="font-size:11px;color:#555;margin-top:8px">ConsignTrack · return package</div></div></body></html>`);
+    w.document.write(`<!doctype html><html><head><title>${code}</title><style>*{font-family:"Helvetica Neue",Arial,sans-serif}body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh}.l{border:2px solid #111;border-radius:12px;padding:24px;text-align:center;width:280px}.c{font-family:ui-monospace,monospace;font-size:24px;font-weight:700;margin-top:10px}.t{font-family:ui-monospace,monospace;font-size:15px;letter-spacing:2px;margin-top:4px}</style></head><body onload="window.print()"><div class="l">${svg}<div class="c">${code}</div><div class="t">${token}</div><div>${consignor}</div><div style="font-size:11px;color:#555;margin-top:8px">ConsignTrack · return package</div></div></body></html>`);
     w.document.close();
   }
 
@@ -68,7 +69,7 @@ export function ReturnBuilder({ storeId, consignors, existing }: { storeId: stri
             )) : <p className="p-4 text-center text-sm text-muted-foreground">No on-hand stock for this consignor.</p>}
           </div>
           {err ? <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{err}</p> : null}
-          {done ? <p className="flex items-center gap-1.5 rounded-md bg-ok/40 px-3 py-2 text-sm text-ok-foreground"><Check className="h-4 w-4" /> Return package generated — print its label on the right.</p> : null}
+          {done ? <p className="flex items-center gap-1.5 rounded-md bg-ok/40 px-3 py-2 text-sm text-ok-foreground"><Check className="h-4 w-4" /> Return packed — scan its QR on the right to dispatch it.</p> : null}
           <Button className="w-full" disabled={busy || lines.length === 0} onClick={generate}>{busy ? "Generating…" : "Generate return package QR"}</Button>
         </CardContent>
       </Card>
@@ -81,15 +82,19 @@ export function ReturnBuilder({ storeId, consignors, existing }: { storeId: stri
               {existing.map((p) => (
                 <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
                   <div className="flex items-center gap-3">
-                    <span className="rounded-lg border border-border bg-white p-1.5"><QRCodeSVG id={`qr-${p.pkg_code}`} value={p.pkg_code} size={44} level="M" marginSize={0} /></span>
+                    <span className="rounded-lg border border-border bg-white p-1.5"><QRCodeSVG id={`qr-${p.pkg_code}`} value={`CT1:${p.qr_token}`} size={44} level="M" marginSize={0} /></span>
                     <div>
                       <div className="tnum text-sm font-semibold">{p.pkg_code}</div>
                       <div className="text-xs text-muted-foreground">{p.consignor_name} · {p.units} units · {formatDate(p.updated_at)}</div>
+                      <div className="tnum text-[11px] tracking-[0.18em] text-muted-foreground">{p.qr_token}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <StatusPill tone={p.status === "RECEIVED_BY_CONSIGNOR" ? "ok" : "info"}>{p.status === "RETURN_IN_TRANSIT" ? "In transit" : "Received"}</StatusPill>
-                    <Button size="icon" variant="ghost" aria-label="Print" onClick={() => printLabel(p.pkg_code, p.consignor_name)}><Printer className="h-4 w-4" /></Button>
+                    <StatusPill tone={p.status === "RECEIVED_BY_CONSIGNOR" ? "ok" : p.status === "RETURN_IN_TRANSIT" ? "info" : "neutral"}>{p.status === "RETURN_IN_TRANSIT" ? "In transit" : p.status === "RECEIVED_BY_CONSIGNOR" ? "Received" : "Packed"}</StatusPill>
+                    {p.status === "RETURN_PACKED" ? (
+                      <Button asChild size="sm" variant="outline"><Link href="/scan"><Truck className="h-4 w-4" /> Scan to dispatch</Link></Button>
+                    ) : null}
+                    <Button size="icon" variant="ghost" aria-label="Print" onClick={() => printLabel(p.pkg_code, p.consignor_name, p.qr_token)}><Printer className="h-4 w-4" /></Button>
                   </div>
                 </div>
               ))}

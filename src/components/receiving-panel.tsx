@@ -21,7 +21,7 @@ export function ReceivingPanel({ awaiting, history }: { awaiting: AwaitingPackag
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Awaiting receipt</CardTitle>
-          <p className="text-xs text-muted-foreground">Packages in transit to your store. Use <strong>Scan a package</strong> above for the camera, or <strong>Receive</strong> to confirm one — stock only moves once you confirm the manifest.</p>
+          <p className="text-xs text-muted-foreground">Packages in transit to your store. Scan the package&apos;s QR to open its manifest — stock only moves once you scan and confirm.</p>
         </CardHeader>
         <CardContent>
           {awaiting.length === 0 ? (
@@ -34,7 +34,7 @@ export function ReceivingPanel({ awaiting, history }: { awaiting: AwaitingPackag
                     <div className="tnum font-semibold">{p.pkg_code}</div>
                     <div className="text-xs text-muted-foreground">{p.consignor_name} · {p.units} units</div>
                   </div>
-                  <Button asChild size="sm"><Link href={`/scan?code=${p.pkg_code}`}><QrCode className="h-4 w-4" /> Receive</Link></Button>
+                  <Button asChild size="sm" variant="outline"><Link href="/scan"><QrCode className="h-4 w-4" /> Scan to receive</Link></Button>
                 </div>
               ))}
             </div>

@@ -8,11 +8,19 @@ export interface ScanLineDTO { line_id: string; sku: string; name: string; qty_e
 export type ScanResult =
   | { kind: "receive"; package: { id: string; pkg_code: string; consignor_name: string; units: number; lines: ScanLineDTO[] } }
   | { kind: "dispatch"; id: string; pkg_code: string; store_name: string; units: number }
+  | { kind: "dispatch_return"; id: string; pkg_code: string; consignor_name: string; units: number }
   | { kind: "return"; id: string; pkg_code: string; store_name: string; units: number; lines: ScanLineDTO[] }
   | { kind: "sku"; sku: { sku_id: string; sku: string; name: string; unit_price: number; on_hand: number } }
   | { kind: "error"; message: string };
 
 function err(message: string): ScanResult { return { kind: "error", message }; }
+
+/** The on-screen/printed QR encodes `CT1:<token>`; `<token>` alone is also accepted. */
+const QR_PREFIX = "CT1:";
+function packageToken(code: string): string | null {
+  const t = (code.startsWith(QR_PREFIX) ? code.slice(QR_PREFIX.length) : code).trim();
+  return /^[0-9A-F]{8}$/.test(t) ? t : null;
+}
 
 export async function resolveScan(rawCode: string): Promise<ScanResult> {
   const code = rawCode.trim().toUpperCase();
@@ -24,12 +32,18 @@ export async function resolveScan(rawCode: string): Promise<ScanResult> {
   const isConsignor = role === "consignor" || (role === "admin" && !!consignor_id);
   const supabase = createClient();
 
-  if (code.startsWith("PKG-") || code.startsWith("RET-")) {
+  // A bare reference code is NOT the QR — refuse it so only the issued label works.
+  if (!packageToken(code) && (code.startsWith("PKG-") || code.startsWith("RET-"))) {
+    return err(`That's the reference, not the QR — scan the ${code.slice(0, 3)} package's QR label.`);
+  }
+
+  const token = packageToken(code);
+  if (token) {
     const { data: pkg } = await supabase
       .from("packages")
       .select("id, pkg_code, direction, status, consignor_id, consignee_id, stores(name), consignors(name), package_lines(id, qty_expected, products(sku, name))")
-      .eq("pkg_code", code).maybeSingle();
-    if (!pkg) return err(`"${code}" isn't recognized.`);
+      .eq("qr_token", token).maybeSingle();
+    if (!pkg) return err("Unrecognized QR — it doesn't match any package.");
     const p = pkg as unknown as {
       id: string; pkg_code: string; direction: string; status: string; consignor_id: string; consignee_id: string;
       stores: { name: string } | null; consignors: { name: string } | null;
@@ -42,23 +56,28 @@ export async function resolveScan(rawCode: string): Promise<ScanResult> {
       // Consignor dispatching their own packed package
       if (isConsignor && consignor_id && p.consignor_id === consignor_id) {
         if (p.status === "PACKED") return { kind: "dispatch", id: p.id, pkg_code: p.pkg_code, store_name: p.stores?.name ?? "—", units };
-        return err(`${code} is already ${p.status.toLowerCase().replace(/_/g, " ")}.`);
+        return err(`${p.pkg_code} is already ${p.status.toLowerCase().replace(/_/g, " ")}.`);
       }
       // Store receiving a package bound to it
       if (isStore && store_id) {
-        if (p.consignee_id !== store_id) return err(`Wrong destination — ${code} is for ${p.stores?.name ?? "another store"}.`);
+        if (p.consignee_id !== store_id) return err(`Wrong destination — ${p.pkg_code} is for ${p.stores?.name ?? "another store"}.`);
         if (p.status === "IN_TRANSIT") return { kind: "receive", package: { id: p.id, pkg_code: p.pkg_code, consignor_name: p.consignors?.name ?? "—", units, lines } };
-        return err(`${code} was already received (${p.status.toLowerCase().replace(/_/g, " ")}).`);
+        return err(`${p.pkg_code} was already received (${p.status.toLowerCase().replace(/_/g, " ")}).`);
       }
-      return err(`${code} can't be actioned from this workspace.`);
+      return err(`${p.pkg_code} can't be actioned from this workspace.`);
     }
 
-    // RETURN package — consignor receives it into the warehouse
+    // RETURN package — the store dispatches it, then the consignor receives it.
+    if (isStore && store_id && p.consignee_id === store_id) {
+      if (p.status === "RETURN_PACKED") return { kind: "dispatch_return", id: p.id, pkg_code: p.pkg_code, consignor_name: p.consignors?.name ?? "—", units };
+      return err(`${p.pkg_code} is already ${p.status.toLowerCase().replace(/_/g, " ")}.`);
+    }
     if (isConsignor && consignor_id && p.consignor_id === consignor_id) {
       if (p.status === "RETURN_IN_TRANSIT") return { kind: "return", id: p.id, pkg_code: p.pkg_code, store_name: p.stores?.name ?? "—", units, lines };
-      return err(`${code} is already ${p.status.toLowerCase().replace(/_/g, " ")}.`);
+      if (p.status === "RETURN_PACKED") return err(`${p.pkg_code} hasn't been dispatched yet — the store scans it first.`);
+      return err(`${p.pkg_code} is already ${p.status.toLowerCase().replace(/_/g, " ")}.`);
     }
-    return err(`${code} can't be actioned from this workspace.`);
+    return err(`${p.pkg_code} can't be actioned from this workspace.`);
   }
 
   // Otherwise treat as a product SKU — consignee sale

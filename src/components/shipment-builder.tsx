@@ -15,8 +15,8 @@ import { StatusPill } from "@/components/status-pill";
 import { formatPHP, formatDate } from "@/lib/utils";
 
 export interface StoreOption { id: string; name: string }
-export interface BuilderSku { sku_id: string; sku: string; name: string; unit_price: number }
-export interface ShipmentRow { id: string; pkg_code: string; store_name: string; units: number; value: number; status: string; updated_at: string }
+export interface BuilderSku { sku_id: string; sku: string; name: string; unit_price: number; available: number }
+export interface ShipmentRow { id: string; pkg_code: string; qr_token: string; store_name: string; units: number; value: number; status: string; updated_at: string }
 
 const TONE: Record<string, "ok" | "warn" | "info" | "neutral"> = { DELIVERED: "ok", PARTIAL_DISPUTED: "warn", IN_TRANSIT: "info", PACKED: "neutral" };
 function label(s: string) { return s.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()); }
@@ -42,10 +42,10 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
     setQty({}); router.refresh();
   }
 
-  function printLabel(code: string, store: string) {
+  function printLabel(code: string, store: string, token: string) {
     const svg = document.getElementById(`pkgqr-${code}`)?.outerHTML ?? "";
     const w = window.open("", "_blank", "width=420,height=560"); if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>${code}</title><style>*{font-family:"Helvetica Neue",Arial,sans-serif}body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh}.l{border:2px solid #111;border-radius:12px;padding:24px;text-align:center;width:280px}.c{font-family:ui-monospace,monospace;font-size:24px;font-weight:700;margin-top:10px}</style></head><body onload="window.print()"><div class="l">${svg}<div class="c">${code}</div><div>→ ${store}</div><div style="font-size:11px;color:#555;margin-top:8px">ConsignTrack · outbound package</div></div></body></html>`);
+    w.document.write(`<!doctype html><html><head><title>${code}</title><style>*{font-family:"Helvetica Neue",Arial,sans-serif}body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh}.l{border:2px solid #111;border-radius:12px;padding:24px;text-align:center;width:280px}.c{font-family:ui-monospace,monospace;font-size:24px;font-weight:700;margin-top:10px}.t{font-family:ui-monospace,monospace;font-size:15px;letter-spacing:2px;margin-top:4px}</style></head><body onload="window.print()"><div class="l">${svg}<div class="c">${code}</div><div class="t">${token}</div><div>→ ${store}</div><div style="font-size:11px;color:#555;margin-top:8px">ConsignTrack · outbound package</div></div></body></html>`);
     w.document.close();
   }
 
@@ -66,12 +66,14 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
             </div>
             <div className="max-h-[42vh] divide-y divide-border overflow-y-auto rounded-xl border border-border">
               {skus.map((s) => (
-                <div key={s.sku_id} className="flex items-center justify-between gap-3 p-3">
+                <div key={s.sku_id} className={`flex items-center justify-between gap-3 p-3 ${s.available <= 0 ? "opacity-50" : ""}`}>
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium">{s.name}</div>
-                    <div className="tnum text-xs text-muted-foreground">{s.sku} · {formatPHP(s.unit_price)}</div>
+                    <div className="tnum text-xs text-muted-foreground">{s.sku} · {formatPHP(s.unit_price)} · <span className={s.available <= 0 ? "text-destructive" : ""}>{s.available} available</span></div>
                   </div>
-                  <Input type="number" min={0} value={qty[s.sku_id] ?? 0} onChange={(e) => setQty({ ...qty, [s.sku_id]: Math.max(0, Number(e.target.value)) })} className="h-8 w-20 text-right tnum" />
+                  <Input type="number" min={0} max={s.available} disabled={s.available <= 0} value={qty[s.sku_id] ?? 0}
+                    onChange={(e) => setQty({ ...qty, [s.sku_id]: Math.max(0, Math.min(Number(e.target.value), s.available)) })}
+                    className="h-8 w-20 text-right tnum" />
                 </div>
               ))}
               {skus.length === 0 ? <p className="p-4 text-center text-sm text-muted-foreground">No products in your catalog yet.</p> : null}
@@ -107,18 +109,18 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Ready to dispatch</CardTitle>
-            <p className="text-xs text-muted-foreground">Scan the package QR at pickup, or hit <strong>Dispatch</strong> here to confirm — stock moves on confirmation, never a stray tap.</p>
+            <p className="text-xs text-muted-foreground">Dispatch happens only when this package&apos;s QR is scanned at pickup — never a stray tap. Camera down? Type the code under the QR.</p>
           </CardHeader>
           <CardContent className="space-y-3">
             {packed.map((p) => (
               <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
                 <div className="flex items-center gap-3">
-                  <span className="rounded-lg border border-border bg-white p-1.5"><QRCodeSVG id={`pkgqr-${p.pkg_code}`} value={p.pkg_code} size={44} level="M" marginSize={0} /></span>
-                  <div><div className="tnum text-sm font-semibold">{p.pkg_code}</div><div className="text-xs text-muted-foreground">→ {p.store_name} · {p.units} units · {formatPHP(p.value)}</div></div>
+                  <span className="rounded-lg border border-border bg-white p-1.5"><QRCodeSVG id={`pkgqr-${p.pkg_code}`} value={`CT1:${p.qr_token}`} size={44} level="M" marginSize={0} /></span>
+                  <div><div className="tnum text-sm font-semibold">{p.pkg_code}</div><div className="text-xs text-muted-foreground">→ {p.store_name} · {p.units} units · {formatPHP(p.value)}</div><div className="tnum text-[11px] tracking-[0.18em] text-muted-foreground">{p.qr_token}</div></div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button size="icon" variant="ghost" aria-label="Print label" onClick={() => printLabel(p.pkg_code, p.store_name)}><Printer className="h-4 w-4" /></Button>
-                  <Button asChild size="sm"><Link href={`/scan?code=${p.pkg_code}`}><Truck className="h-4 w-4" /> Dispatch</Link></Button>
+                  <Button size="icon" variant="ghost" aria-label="Print label" onClick={() => printLabel(p.pkg_code, p.store_name, p.qr_token)}><Printer className="h-4 w-4" /></Button>
+                  <Button asChild size="sm" variant="outline"><Link href="/scan"><Truck className="h-4 w-4" /> Scan to dispatch</Link></Button>
                 </div>
               </div>
             ))}

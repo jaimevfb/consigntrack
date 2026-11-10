@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { ScanLine, Camera, Undo2, ShoppingCart, Check, X, Trash2, CameraOff } from "lucide-react";
 import { resolveScan, type ScanResult } from "@/app/_actions/scan";
-import { dispatchPackageAction, receiveReturnPackage, posSale, type SaleLine } from "@/app/_actions/ledger-ops";
+import { dispatchPackageAction, dispatchReturnPackageAction, receiveReturnPackage, posSale, type SaleLine } from "@/app/_actions/ledger-ops";
 import { PackageManifestModal } from "@/components/package-manifest-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { formatPHP } from "@/lib/utils";
 
 interface CartLine { sku_id: string; sku: string; name: string; unit_price: number; on_hand: number; qty: number }
 
-export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeId?: string | null }) {
+export function ScanHub({ storeId }: { storeId?: string | null }) {
   const router = useRouter();
   const [typed, setTyped] = React.useState("");
   const [result, setResult] = React.useState<ScanResult | null>(null);
@@ -72,16 +72,17 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
       setTimeout(() => { setResult((cur) => (cur === r ? null : cur)); lock.current = false; }, 2200);
       return;
     }
-    if (r.kind === "dispatch") {
+    if (r.kind === "dispatch" || r.kind === "dispatch_return") {
       // The scan IS the dispatch — no confirm button. Flip it immediately.
-      const res = await dispatchPackageAction(r.id);
+      const res = r.kind === "dispatch" ? await dispatchPackageAction(r.id) : await dispatchReturnPackageAction(r.id);
       if (!res.ok) {
         const er: ScanResult = { kind: "error", message: res.error };
         setResult(er);
         setTimeout(() => { setResult((cur) => (cur === er ? null : cur)); lock.current = false; }, 2500);
       } else {
         router.refresh();
-        finishSuccess(`Dispatched ${r.pkg_code} → ${r.store_name}`);
+        const msg = r.kind === "dispatch" ? `Dispatched ${r.pkg_code} → ${r.store_name}` : `Return ${r.pkg_code} dispatched → ${r.consignor_name}`;
+        finishSuccess(msg);
       }
       return;
     }
@@ -116,9 +117,8 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
     setCamState("off");
   }
 
-  // Deep link: resolve the ?code= on mount.
-  React.useEffect(() => { if (initialCode) handle(initialCode); }, [initialCode, handle]);
-  // Camera-first: start it automatically.
+  // Camera-first: start it automatically. (No deep-link auto-action — a custody
+  // change only ever happens from an actual QR decode or a typed token.)
   React.useEffect(() => { if (!startedRef.current) { startedRef.current = true; startCamera(); } }, [startCamera]);
   React.useEffect(() => () => { void stopScanner(); }, [stopScanner]);
 
@@ -178,7 +178,7 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
               <form onSubmit={onTyped} className="flex gap-2">
                 <div className="relative flex-1">
                   <ScanLine className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="PKG- / RET- code or product SKU" className="pl-8" autoFocus />
+                  <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="QR token (under the label) or product SKU" className="pl-8" autoFocus />
                 </div>
                 <Button type="submit" variant="outline">Go</Button>
               </form>
