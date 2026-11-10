@@ -224,7 +224,7 @@ export function ScanHub({ storeId }: { storeId?: string | null }) {
 
       {result?.kind === "return" ? (
         <Card><CardContent className="pt-5">
-          <div className="flex items-center gap-2 text-sm"><Undo2 className="h-4 w-4 text-primary" /> Receive <strong>{result.pkg_code}</strong> ← {result.store_name} ({result.units} units) into your warehouse?</div>
+          <div className="flex items-start gap-2 text-sm"><Undo2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> <p>Receive <strong className="whitespace-nowrap">{result.pkg_code}</strong> ← {result.store_name} ({result.units} units) into your warehouse?</p></div>
           <div className="mt-3 flex gap-2">
             <Button className="flex-1" disabled={busy} onClick={async () => {
               setBusy(true);
