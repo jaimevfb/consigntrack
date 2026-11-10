@@ -10,20 +10,20 @@ export async function getStoreSales(storeId: string, limit = 25): Promise<SaleRe
   const supabase = createClient();
   const { data } = await supabase
     .from("ledger_entries")
-    .select("qty, unit_price, price_flag, reason, created_at, products(sku, name)")
+    .select("qty, unit_price, price_flag, reason, created_at, products(sku, name, unit_price)")
     .eq("consignee_id", storeId)
     .eq("entry_type", "SALE")
     .order("created_at", { ascending: false })
     .limit(400);
   const rows = (data ?? []) as unknown as Array<{
     qty: number; unit_price: number | null; price_flag: boolean | null; reason: string | null; created_at: string;
-    products: { sku: string; name: string } | null;
+    products: { sku: string; name: string; unit_price: number | null } | null;
   }>;
   const sales = new Map<string, SaleRecord>();
   for (const r of rows) {
     const key = r.created_at; // lines of one sale share the transaction timestamp
     const qty = -r.qty; // SALE qty is stored negative
-    const price = r.unit_price ?? 0;
+    const price = r.unit_price ?? r.products?.unit_price ?? 0; // fall back to catalog price
     const line = { name: r.products?.name ?? "—", sku: r.products?.sku ?? "—", qty, unit_price: price, total: qty * price };
     const s = sales.get(key);
     if (s) { s.lines.push(line); s.units += qty; s.total += line.total; s.flagged = s.flagged || !!r.price_flag; }

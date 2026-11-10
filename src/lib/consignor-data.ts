@@ -6,25 +6,51 @@ export interface ConsignorNetwork {
   atStoreUnits: number; atStoreValue: number;
   unbilledSales: number;
   pendingSettlements: number;
+  net30: number;
+  netSeries: { label: string; value: number }[];
   feed: { pkg_code: string; direction: string; status: string; store_name: string; units: number; updated_at: string }[];
   leaderboard: { store_name: string; onHand: number; sold: number; sellThrough: number }[];
 }
 
 export async function getConsignorNetwork(consignorId: string): Promise<ConsignorNetwork> {
   const supabase = createClient();
-  const [{ data: wh }, { data: prods }, { data: ledger }, { data: packages }, { data: settlements }] = await Promise.all([
+  const [{ data: wh }, { data: prods }, { data: ledger }, { data: packages }, { data: settlements }, { data: agreements }] = await Promise.all([
     supabase.from("v_warehouse_on_hand").select("sku_id, qty").eq("consignor_id", consignorId),
     supabase.from("products").select("id, unit_price, consignor_id").eq("consignor_id", consignorId),
-    supabase.from("ledger_entries").select("consignee_id, sku_id, entry_type, qty, unit_price, stores:consignee_id(name), products!inner(consignor_id)").eq("products.consignor_id", consignorId),
+    supabase.from("ledger_entries").select("consignee_id, sku_id, entry_type, qty, unit_price, created_at, stores:consignee_id(name), products!inner(consignor_id)").eq("products.consignor_id", consignorId),
     supabase.from("packages").select("pkg_code, direction, status, updated_at, stores(name), package_lines(qty_expected)").eq("consignor_id", consignorId).order("updated_at", { ascending: false }).limit(8),
     supabase.from("settlements").select("gross_sales, net_payable, status, agreements!inner(consignor_id)").eq("agreements.consignor_id", consignorId),
+    supabase.from("agreements").select("store_id, commission_pct").eq("consignor_id", consignorId),
   ]);
 
   const price = new Map(((prods ?? []) as { id: string; unit_price: number }[]).map((p) => [p.id, p.unit_price]));
+  const commByStore = new Map(((agreements ?? []) as { store_id: string; commission_pct: number }[]).map((a) => [a.store_id, Number(a.commission_pct)]));
   const warehouseUnits = ((wh ?? []) as { sku_id: string; qty: number }[]).reduce((a, r) => a + r.qty, 0);
   const warehouseValue = ((wh ?? []) as { sku_id: string; qty: number }[]).reduce((a, r) => a + r.qty * (price.get(r.sku_id) ?? 0), 0);
 
-  const led = ((ledger ?? []) as unknown as Array<{ consignee_id: string; entry_type: string; qty: number; unit_price: number | null; sku_id: string; stores: { name: string } | null }>);
+  const led = ((ledger ?? []) as unknown as Array<{ consignee_id: string; entry_type: string; qty: number; unit_price: number | null; sku_id: string; created_at: string; stores: { name: string } | null }>);
+
+  // Net profit (consignor's take = gross − store commission) as a 30-day daily series.
+  const netByDay = new Map<string, number>();
+  let net30 = 0;
+  const since = new Date(); since.setDate(since.getDate() - 29); since.setHours(0, 0, 0, 0);
+  for (const e of led) {
+    if (e.entry_type !== "SALE") continue;
+    const gross = -e.qty * (e.unit_price ?? price.get(e.sku_id) ?? 0);
+    const pct = commByStore.get(e.consignee_id) ?? 0;
+    const netVal = gross * (1 - pct / 100);
+    if (new Date(e.created_at) >= since) {
+      const k = e.created_at.slice(0, 10);
+      netByDay.set(k, (netByDay.get(k) ?? 0) + netVal);
+      net30 += netVal;
+    }
+  }
+  const netSeries: { label: string; value: number }[] = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = d.toISOString().slice(0, 10);
+    netSeries.push({ label: `${d.getMonth() + 1}/${d.getDate()}`, value: Math.round(netByDay.get(k) ?? 0) });
+  }
   // at-stores on hand per store, sold per store, grossSales
   const perStore = new Map<string, { name: string; onHand: number; sold: number }>();
   let atStoreUnits = 0, atStoreValue = 0, grossAll = 0;
@@ -60,7 +86,8 @@ export async function getConsignorNetwork(consignorId: string): Promise<Consigno
   return {
     warehouseUnits, warehouseValue: Math.round(warehouseValue), inTransitUnits,
     atStoreUnits, atStoreValue: Math.round(atStoreValue),
-    unbilledSales, pendingSettlements: Math.round(pendingSettlements), feed, leaderboard,
+    unbilledSales, pendingSettlements: Math.round(pendingSettlements),
+    net30: Math.round(net30), netSeries, feed, leaderboard,
   };
 }
 

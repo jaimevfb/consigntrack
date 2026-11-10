@@ -3,6 +3,7 @@ import { Warehouse, Truck, Store as StoreIcon, Coins, FileClock, ArrowUpRight, P
 import { requireProfile } from "@/lib/auth";
 import { getConsignorNetwork } from "@/lib/consignor-data";
 import { KpiTile } from "@/components/kpi-tile";
+import { GlowLineChart } from "@/components/charts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusPill } from "@/components/status-pill";
@@ -32,6 +33,23 @@ export default async function ConsignorDashboardPage() {
         <KpiTile icon={StoreIcon} label="At stores" hint={`${formatNumber(net.atStoreUnits)} units`} value={formatPHP(net.atStoreValue)} />
         <KpiTile icon={Coins} label="Unbilled sales" hint="Accruing this cycle" value={formatPHP(net.unbilledSales)} />
       </div>
+
+      {/* Net profit trend */}
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-2">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <CardTitle className="text-base">Net profit</CardTitle>
+              <div className="tnum mt-1 text-3xl font-bold">{formatPHP(net.net30)}</div>
+              <p className="text-xs text-muted-foreground">Your take after commission · last 30 days</p>
+            </div>
+            <span className="text-xs text-muted-foreground">Daily net</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <GlowLineChart points={net.netSeries} height={190} valueLabel={formatPHP} />
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">

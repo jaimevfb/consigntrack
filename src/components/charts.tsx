@@ -124,6 +124,81 @@ export function AreaTrend({
   );
 }
 
+let _glId = 0;
+/** Edgy neon line chart: gradient stroke, glow, animated draw, pulsing head. */
+export function GlowLineChart({
+  points,
+  height = 190,
+  valueLabel = (n) => String(n),
+}: {
+  points: TrendPoint[];
+  height?: number;
+  valueLabel?: (n: number) => string;
+}) {
+  const w = 640, h = height;
+  const padL = 10, padR = 14, padTop = 16, padBottom = 20;
+  const innerW = w - padL - padR, innerH = h - padTop - padBottom;
+  const max = Math.max(1, ...points.map((p) => p.value));
+  const step = points.length > 1 ? innerW / (points.length - 1) : 0;
+  const xy = points.map((p, i) => [padL + i * step, padTop + innerH - (p.value / max) * innerH] as const);
+  const line = smoothPath(xy);
+  const area = xy.length ? `${line} L${xy[xy.length - 1][0].toFixed(1)},${(padTop + innerH).toFixed(1)} L${xy[0][0].toFixed(1)},${(padTop + innerH).toFixed(1)} Z` : "";
+  const last = xy[xy.length - 1];
+  const peak = xy[points.reduce((bi, p, i, a) => (p.value > a[bi].value ? i : bi), 0)];
+  const uid = `gl${++_glId}`;
+  const labelEvery = Math.ceil((points.length || 1) / 6);
+
+  return (
+    <div className="w-full">
+      <style>{`@keyframes ${uid}d{to{stroke-dashoffset:0}}@keyframes ${uid}p{0%{r:3;opacity:.9}70%{r:16;opacity:0}100%{r:16;opacity:0}}`}</style>
+      <svg viewBox={`0 0 ${w} ${h}`} className="h-auto w-full" role="img" aria-label="Trend">
+        <defs>
+          <linearGradient id={`${uid}s`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#3B82F6" />
+            <stop offset="52%" stopColor="#22D3EE" />
+            <stop offset="100%" stopColor="#A78BFA" />
+          </linearGradient>
+          <linearGradient id={`${uid}a`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#22D3EE" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="#22D3EE" stopOpacity="0" />
+          </linearGradient>
+          <filter id={`${uid}g`} x="-20%" y="-60%" width="140%" height="220%">
+            <feGaussianBlur stdDeviation="3.4" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        {[0.25, 0.5, 0.75, 1].map((f, i) => {
+          const y = padTop + innerH - f * innerH;
+          return <line key={i} x1={padL} x2={w - padR} y1={y} y2={y} stroke="var(--border)" strokeWidth={1} strokeDasharray="2 5" opacity={0.5} />;
+        })}
+        {area ? <path d={area} fill={`url(#${uid}a)`} /> : null}
+        <path d={line} fill="none" stroke={`url(#${uid}s)`} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+          filter={`url(#${uid}g)`} pathLength={1} strokeDasharray={1} strokeDashoffset={1}
+          style={{ animation: `${uid}d 1.1s ease-out forwards` }} />
+        {peak && points.length > 1 ? (
+          <text x={Math.min(w - padR, Math.max(padL + 16, peak[0]))} y={Math.max(11, peak[1] - 8)} textAnchor="middle"
+            className="fill-[var(--muted-foreground)]" style={{ fontSize: 9, fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>
+            {valueLabel(Math.round(max))}
+          </text>
+        ) : null}
+        {last ? (
+          <>
+            <circle cx={last[0]} cy={last[1]} r={3} fill="#A78BFA" style={{ animation: `${uid}p 1.8s ease-out infinite` }} />
+            <circle cx={last[0]} cy={last[1]} r={3.2} fill="#fff" filter={`url(#${uid}g)`} />
+          </>
+        ) : null}
+        {points.map((p, i) =>
+          i % labelEvery === 0 || i === points.length - 1 ? (
+            <text key={i} x={padL + i * step} y={h - 5} textAnchor="middle" className="fill-[var(--muted-foreground)]" style={{ fontSize: 9, fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>
+              {p.label}
+            </text>
+          ) : null,
+        )}
+      </svg>
+    </div>
+  );
+}
+
 /**
  * Daily totals as vertical bars (design-spec rule: never a smoothed line).
  * y starts at 0, zero days render as 2px stubs, ≤3 gridlines, sparse-data note.

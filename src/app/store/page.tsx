@@ -3,7 +3,7 @@ import { ShoppingCart, Boxes, Coins, FileClock, PackageSearch, Package } from "l
 import { requireProfile } from "@/lib/auth";
 import { getStoreDashboardLedger, getStoreSalesAnalytics } from "@/lib/ledger-data";
 import { StaffDashboard } from "@/components/staff-dashboard";
-import { DailyBars, RankedBars } from "@/components/charts";
+import { GlowLineChart, RankedBars } from "@/components/charts";
 import { KpiTile } from "@/components/kpi-tile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,20 +46,24 @@ export default async function StoreDashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card className="overflow-hidden lg:col-span-2">
           <CardHeader className="pb-2">
-            <div className="flex items-baseline justify-between">
-              <CardTitle className="text-base">Daily sales</CardTitle>
-              <span className="text-xs text-muted-foreground">Last 14 days</span>
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <CardTitle className="text-base">Total sales</CardTitle>
+                <div className="tnum mt-1 text-3xl font-bold">{formatPHP(dash.gross30)}</div>
+                <p className="text-xs text-muted-foreground">Gross this period · {formatPHP(dash.commission30)} commission earned</p>
+              </div>
+              <span className="text-xs text-muted-foreground">Daily</span>
             </div>
           </CardHeader>
           <CardContent>
-            <DailyBars points={sales.series} height={200} valueLabel={formatPHP} />
+            <GlowLineChart points={sales.series} height={200} valueLabel={formatPHP} />
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Top selling SKUs</CardTitle>
+            <CardTitle className="text-base">Top selling products</CardTitle>
           </CardHeader>
           <CardContent>
             {sales.topSkus.length > 0 ? (
