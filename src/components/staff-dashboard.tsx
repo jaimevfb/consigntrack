@@ -1,113 +1,44 @@
 import Link from "next/link";
-import { ScanLine, ShoppingCart, RotateCcw, PackageCheck, PackageMinus, Tag } from "lucide-react";
+import { QrCode, ShoppingCart, PackageSearch } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { KpiTile } from "@/components/kpi-tile";
-import { ItemStatusPill } from "@/components/item-lifecycle";
+import { Card, CardContent } from "@/components/ui/card";
+import { formatNumber } from "@/lib/utils";
 
+/** Store-staff view: task-focused, no financials. Scan a box, record a sale. */
 export async function StaffDashboard({ storeId, name }: { storeId: string; name: string }) {
   const supabase = createClient();
-  const [{ data: inbound }, { data: listed }, { data: low }, { data: products }] = await Promise.all([
-    supabase.from("items").select("id, code, description, status").eq("store_id", storeId).in("status", ["dispatched", "in_transit", "delivered"]),
-    supabase.from("items").select("id", { count: "exact", head: false }).eq("store_id", storeId).eq("status", "listed"),
-    supabase.rpc("find_low_stock", { p_threshold: 5 }),
-    supabase.from("products").select("id, name"),
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const [{ count: incoming }, { data: soldToday }] = await Promise.all([
+    supabase.from("packages").select("id", { count: "exact", head: true }).eq("consignee_id", storeId).eq("status", "IN_TRANSIT"),
+    supabase.from("ledger_entries").select("qty").eq("consignee_id", storeId).eq("entry_type", "SALE").gte("created_at", todayStart.toISOString()),
   ]);
-  const inboundRows = (inbound ?? []) as Array<{ id: string; code: string; description: string; status: string }>;
-  const lowRows = (low ?? []) as Array<{ product_id: string }>;
-  const productName = Object.fromEntries(((products ?? []) as { id: string; name: string }[]).map((p) => [p.id, p.name]));
-  const lowFirst = (low ?? []) as Array<{ product_id: string; qty_on_hand: number }>;
+  const unitsSoldToday = ((soldToday ?? []) as { qty: number }[]).reduce((a, r) => a + -r.qty, 0);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back, {name.split(" ")[0]}. Here are today&rsquo;s tasks and quick actions.
-        </p>
+        <h1 className="text-2xl">Hi, {name.split(" ")[0]}</h1>
+        <p className="text-sm text-muted-foreground">Two jobs today: receive boxes and record sales.</p>
       </div>
-
-      {/* Quick actions — optimised for one-handed use on a phone */}
-      <div className="grid grid-cols-3 gap-3">
-        <QuickAction href="/store/scan" icon={ScanLine} label="Scan items" primary />
-        <QuickAction href="/store/sales" icon={ShoppingCart} label="Record sale" />
-        <QuickAction href="/store/returns" icon={RotateCcw} label="Record return" />
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        <KpiTile icon={PackageCheck} label="To receive" value={String(inboundRows.length)} hint="Inbound shipments" tone={inboundRows.length > 0 ? "warn" : "default"} />
-        <KpiTile icon={Tag} label="On shelves" value={String(listed?.length ?? 0)} hint="Listed for sale" />
-        <KpiTile icon={PackageMinus} label="Low stock" value={String(lowRows.length)} hint="≤ 5 on hand" tone={lowRows.length > 0 ? "warn" : "default"} />
-      </div>
-
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle className="text-base">To receive</CardTitle>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/store/scan"><ScanLine className="h-4 w-4" /> Scan to receive</Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {inboundRows.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">No inbound items are awaiting receipt.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {inboundRows.map((i) => (
-                <li key={i.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <div>
-                    <div className="text-sm font-medium">{i.description}</div>
-                    <div className="tnum text-xs text-muted-foreground">{i.code}</div>
-                  </div>
-                  <ItemStatusPill status={i.status} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-
-      {lowFirst.length > 0 ? (
+      <div className="grid gap-4 sm:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Low stock</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="divide-y divide-border">
-              {lowFirst.slice(0, 8).map((r, i) => (
-                <li key={i} className="flex items-center justify-between py-2 text-sm">
-                  <span>{productName[r.product_id] ?? "Product"}</span>
-                  <span className="tnum text-warn-foreground">{r.qty_on_hand} left</span>
-                </li>
-              ))}
-            </ul>
+          <CardContent className="flex items-center justify-between gap-3 p-5">
+            <div><div className="text-sm text-muted-foreground">Packages to receive</div><div className="tnum text-3xl font-bold">{formatNumber(incoming ?? 0)}</div></div>
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-foreground"><PackageSearch className="h-5 w-5" /></span>
           </CardContent>
         </Card>
-      ) : null}
+        <Card>
+          <CardContent className="flex items-center justify-between gap-3 p-5">
+            <div><div className="text-sm text-muted-foreground">Units sold today</div><div className="tnum text-3xl font-bold">{formatNumber(unitsSoldToday)}</div></div>
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-foreground"><ShoppingCart className="h-5 w-5" /></span>
+          </CardContent>
+        </Card>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Button asChild size="lg" className="h-16 text-base"><Link href="/store/deliveries"><QrCode className="h-5 w-5" /> Scan package QR</Link></Button>
+        <Button asChild size="lg" variant="outline" className="h-16 text-base"><Link href="/store/sales"><ShoppingCart className="h-5 w-5" /> Record a sale</Link></Button>
+      </div>
     </div>
-  );
-}
-
-function QuickAction({
-  href,
-  icon: Icon,
-  label,
-  primary,
-}: {
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  primary?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-5 transition-colors ${
-        primary ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted"
-      }`}
-    >
-      <Icon className="h-6 w-6" />
-      <span className="text-sm font-medium">{label}</span>
-    </Link>
   );
 }

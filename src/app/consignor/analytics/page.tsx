@@ -1,68 +1,59 @@
 import { requireProfile } from "@/lib/auth";
-import { getConsignorAnalytics } from "@/lib/data";
-import { AreaTrend, Donut, RankedBars } from "@/components/charts";
+import { getConsignorInsights } from "@/lib/consignor-data";
+import { AreaTrend, RankedBars } from "@/components/charts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPHP, formatNumber } from "@/lib/utils";
 
-export default async function ConsignorAnalyticsPage() {
+export const metadata = { title: "Insights" };
+
+export default async function ConsignorInsightsPage() {
   const { profile } = await requireProfile();
   if (!profile.consignor_id) return <p className="text-sm text-muted-foreground">No consignor scope.</p>;
-  const a = await getConsignorAnalytics(profile.consignor_id);
+  const { rows, byStore, series, gross30 } = await getConsignorInsights(profile.consignor_id);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl">Analytics</h1>
-        <p className="text-sm text-muted-foreground">Gross sales, product activity, and store mix for {a.windowLabel.toLowerCase()}.</p>
+        <h1 className="text-2xl">Insights</h1>
+        <p className="text-sm text-muted-foreground">What&rsquo;s selling where — to decide what to make more of and ship next. Gross last 30 days: {formatPHP(gross30)}.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Tile label="Gross sales" value={formatPHP(a.tiles.gross30)} />
-        <Tile label="Units sold" value={formatNumber(a.tiles.units30)} />
-        <Tile label="Orders" value={formatNumber(a.tiles.orders30)} />
-        <Tile label="Average sale value" value={formatPHP(a.tiles.avgOrder)} />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2"><CardTitle className="text-base">Daily gross sales</CardTitle></CardHeader>
+          <CardContent><AreaTrend points={series} height={200} valueLabel={formatPHP} /></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Gross by store</CardTitle></CardHeader>
+          <CardContent>
+            {byStore.length > 0 ? <RankedBars rows={byStore.map((s) => ({ label: s.store, value: s.gross }))} valueFormat={formatPHP} /> : <p className="py-8 text-center text-sm text-muted-foreground">No sales yet.</p>}
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
-        <CardHeader>
-            <CardTitle className="text-base">Daily gross sales · last 14 days</CardTitle>
-        </CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base">SKU velocity</CardTitle><p className="text-xs text-muted-foreground">Warehouse vs. on-shelf vs. 30-day sales — feeds what to produce and allocate.</p></CardHeader>
         <CardContent>
-          <AreaTrend points={a.series} height={220} valueLabel={formatPHP} />
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead className="text-right">In warehouse</TableHead><TableHead className="text-right">At stores</TableHead><TableHead className="text-right">Sold (30d)</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.sku_id}>
+                    <TableCell className="font-medium">{r.name}</TableCell>
+                    <TableCell className="tnum text-sm text-muted-foreground">{r.sku}</TableCell>
+                    <TableCell className="tnum text-right">{formatNumber(r.warehouse)}</TableCell>
+                    <TableCell className="tnum text-right">{formatNumber(r.atStores)}</TableCell>
+                    <TableCell className="tnum text-right font-medium">{formatNumber(r.sold30)}</TableCell>
+                  </TableRow>
+                ))}
+                {rows.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground">No products yet.</TableCell></TableRow> : null}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Top products</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RankedBars rows={a.topProducts.map((p) => ({ label: p.name, value: p.gross, sub: `${p.qtySold} sold` }))} valueFormat={formatPHP} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Gross sales by store</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {a.mix.some((m) => m.value > 0) ? (
-              <Donut segments={a.mix.map((m) => ({ label: `${m.label} · ${formatPHP(m.value)}`, value: m.value }))} centerLabel="stores" centerValue={String(a.mix.length)} />
-            ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">Store sales totals will appear here when sales are recorded.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function Tile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="tnum mt-1.5 text-2xl font-semibold">{value}</div>
     </div>
   );
 }

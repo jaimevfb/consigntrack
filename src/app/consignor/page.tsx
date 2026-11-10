@@ -1,174 +1,92 @@
 import Link from "next/link";
-import { Package, Coins, Wallet, AlertCircle, ArrowUpRight } from "lucide-react";
+import { Warehouse, Truck, Store as StoreIcon, Coins, FileClock, ArrowUpRight, PackageSearch } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
-import { getConsignorDashboard, getConsignorAnalytics, getAlerts } from "@/lib/data";
-import { getItemStatusCounts } from "@/lib/items-data";
-import { AlertsPanel } from "@/components/alerts-panel";
-import { CustodySummary } from "@/components/custody-summary";
-import { AreaTrend, Donut, RankedBars } from "@/components/charts";
-import { KpiTile, MiniStat } from "@/components/kpi-tile";
-import { StatusPill } from "@/components/status-pill";
+import { getConsignorNetwork } from "@/lib/consignor-data";
+import { KpiTile } from "@/components/kpi-tile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatPHP, formatNumber } from "@/lib/utils";
+import { StatusPill } from "@/components/status-pill";
+import { formatPHP, formatNumber, formatDate } from "@/lib/utils";
+
+const TONE: Record<string, "ok" | "warn" | "info" | "neutral"> = { DELIVERED: "ok", RECEIVED_BY_CONSIGNOR: "ok", PARTIAL_DISPUTED: "warn", IN_TRANSIT: "info", RETURN_IN_TRANSIT: "info", PACKED: "neutral" };
+function label(s: string) { return s.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()); }
 
 export default async function ConsignorDashboardPage() {
   const { profile } = await requireProfile();
-  if (!profile.consignor_id) {
-    return (
-      <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-        This account has no consignor scope.
-      </div>
-    );
-  }
-
-  const supabase = createClient();
-  const [dash, analytics, alerts, itemCounts, { data: settRows }] = await Promise.all([
-    getConsignorDashboard(profile.consignor_id),
-    getConsignorAnalytics(profile.consignor_id),
-    getAlerts(),
-    getItemStatusCounts(),
-    supabase.from("settlements").select("gross_sales, commission, returns_total, net_payable"),
-  ]);
-
-  const setts = (settRows ?? []) as Array<{ gross_sales: number; commission: number; returns_total: number; net_payable: number }>;
-  const econ = setts.reduce(
-    (a, s) => ({
-      gross: a.gross + Number(s.gross_sales),
-      commission: a.commission + Number(s.commission),
-      returns: a.returns + Number(s.returns_total),
-      net: a.net + Number(s.net_payable),
-    }),
-    { gross: 0, commission: 0, returns: 0, net: 0 },
-  );
+  if (!profile.consignor_id) return <p className="text-sm text-muted-foreground">No consignor scope.</p>;
+  const net = await getConsignorNetwork(profile.consignor_id);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">A summary of product performance, inventory, and settlement balances.</p>
+          <p className="text-sm text-muted-foreground">Your whole network at a glance — where every unit sits and what&rsquo;s owed.</p>
         </div>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/consignor/analytics">
-            View analytics <ArrowUpRight className="h-4 w-4" />
-          </Link>
-        </Button>
+        <Button asChild size="sm"><Link href="/consignor/shipments"><PackageSearch className="h-4 w-4" /> Build shipment</Link></Button>
       </div>
 
-      {/* KPI row */}
+      {/* Network inventory strip */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiTile icon={Coins} label="Gross sales" hint="Last 30 days" value={formatPHP(analytics.tiles.gross30)} delta={analytics.tiles.deltaPct} />
-        <KpiTile icon={Package} label="Items on hand" hint="Across all stores" value={formatNumber(dash.tiles.onHand)} />
-        <KpiTile icon={Wallet} label="Net payable" hint="Pending settlement confirmation" value={formatPHP(dash.tiles.netOwed)} tone="ok" />
-        <KpiTile
-          icon={AlertCircle}
-          label="Overdue"
-          hint="Settlements past due"
-          value={formatNumber(dash.tiles.overdue)}
-          tone={dash.tiles.overdue > 0 ? "warn" : "default"}
-        />
+        <KpiTile icon={Warehouse} label="In warehouse" hint={`${formatNumber(net.warehouseUnits)} units`} value={formatPHP(net.warehouseValue)} />
+        <KpiTile icon={Truck} label="In transit" hint="To your stores" value={formatNumber(net.inTransitUnits)} tone={net.inTransitUnits > 0 ? "ok" : "default"} />
+        <KpiTile icon={StoreIcon} label="At stores" hint={`${formatNumber(net.atStoreUnits)} units`} value={formatPHP(net.atStoreValue)} />
+        <KpiTile icon={Coins} label="Unbilled sales" hint="Accruing this cycle" value={formatPHP(net.unbilledSales)} />
       </div>
 
-      {/* Trend + economics */}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Daily sales trend</CardTitle>
-              <span className="text-xs text-muted-foreground">Last 14 days</span>
-            </div>
-            <div className="mt-3 flex gap-6">
-              <MiniStat label="Gross sales (30d)" value={formatPHP(analytics.tiles.gross30)} />
-              <MiniStat label="Units sold (30d)" value={formatNumber(analytics.tiles.units30)} />
-              <MiniStat label="Average sale (30d)" value={formatPHP(analytics.tiles.avgOrder)} />
-            </div>
-          </CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Live shipment feed</CardTitle></CardHeader>
           <CardContent>
-            <AreaTrend points={analytics.series} valueLabel={(n) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n))} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Settlement summary</CardTitle>
-            <p className="text-xs text-muted-foreground">All statements to date</p>
-          </CardHeader>
-          <CardContent>
-            {econ.gross > 0 ? (
-              <Donut
-                centerLabel="gross"
-                centerValue={formatPHP(econ.gross).replace("₱", "₱")}
-                segments={[
-                  { label: `Net payable · ${formatPHP(econ.net)}`, value: econ.net },
-                  { label: `Commission · ${formatPHP(econ.commission)}`, value: econ.commission },
-                  { label: `Returns · ${formatPHP(econ.returns)}`, value: econ.returns },
-                ]}
-              />
-            ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">Settlement totals will appear here after the first statement is generated.</p>
+            {net.feed.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">No shipments yet.</p> : (
+              <div className="divide-y divide-border">
+                {net.feed.map((f, i) => (
+                  <div key={i} className="flex items-center justify-between gap-3 py-2.5">
+                    <div className="min-w-0">
+                      <div className="tnum text-sm font-medium">{f.pkg_code}</div>
+                      <div className="text-xs text-muted-foreground">{f.direction === "RETURN" ? "← " : "→ "}{f.store_name} · {f.units} units · {formatDate(f.updated_at)}</div>
+                    </div>
+                    <StatusPill tone={TONE[f.status] ?? "neutral"}>{label(f.status)}</StatusPill>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
-      </div>
-
-      {/* Top products + per-store */}
-      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Top products</CardTitle>
+          <CardHeader className="flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base">Pending settlements</CardTitle>
+            <Link href="/consignor/settlements" className="text-xs text-muted-foreground hover:text-foreground"><ArrowUpRight className="h-3.5 w-3.5" /></Link>
           </CardHeader>
           <CardContent>
-            <RankedBars
-              rows={analytics.topProducts.map((p) => ({ label: p.name, value: p.gross, sub: `${p.qtySold} sold` }))}
-              valueFormat={formatPHP}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Per-store performance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Store</TableHead>
-                  <TableHead className="text-right">On hand</TableHead>
-                      <TableHead className="text-right">Net payable</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dash.stores.map((s) => (
-                  <TableRow key={s.storeId}>
-                    <TableCell className="font-medium">{s.storeName}</TableCell>
-                    <TableCell className="tnum text-right">{formatNumber(s.onHand)}</TableCell>
-                    <TableCell className="tnum text-right">{formatPHP(s.owed)}</TableCell>
-                    <TableCell>
-                      <StatusPill tone={s.status === "overdue" ? "warn" : "ok"}>
-                        {s.status === "overdue" ? "Overdue" : "On track"}
-                      </StatusPill>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {dash.stores.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
-                      No active store relationships yet.
-                    </TableCell>
-                  </TableRow>
-                ) : null}
-              </TableBody>
-            </Table>
+            <div className="flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-accent-foreground"><FileClock className="h-[18px] w-[18px]" /></span>
+              <div className="tnum text-2xl font-bold">{formatPHP(net.pendingSettlements)}</div>
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">Statements issued and awaiting payment.</p>
           </CardContent>
         </Card>
       </div>
 
-      <CustodySummary counts={itemCounts} itemsHref="/consignor/items" />
-      <AlertsPanel alerts={alerts} moreHref="/consignor/items" />
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Partner leaderboard</CardTitle><p className="text-xs text-muted-foreground">Stores ranked by sell-through. The bottom of the list holds stagnant stock.</p></CardHeader>
+        <CardContent>
+          {net.leaderboard.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">No store activity yet.</p> : (
+            <div className="space-y-2.5">
+              {net.leaderboard.map((s, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="w-28 shrink-0 truncate text-sm font-medium">{s.store_name}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, s.sellThrough)}%` }} />
+                  </div>
+                  <span className="tnum w-12 text-right text-sm">{s.sellThrough}%</span>
+                  <span className="tnum w-20 text-right text-xs text-muted-foreground">{s.sold} sold</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

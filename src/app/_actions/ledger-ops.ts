@@ -79,6 +79,15 @@ export async function generateLedgerSettlement(agreementId: string, periodStart:
   return { ok: true };
 }
 
+export async function receiveReturnPackage(packageId: string, lines: { line_id: string; qty_received: number }[]): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("receive_return_package", { p_package_id: packageId, p_lines: lines });
+  if (error) return { ok: false, error: clean(error.message) };
+  revalidatePath("/consignor/shipments");
+  revalidatePath("/consignor");
+  return { ok: true };
+}
+
 export async function dispatchPackageAction(packageId: string): Promise<ActionResult> {
   const supabase = createClient();
   const { error } = await supabase.rpc("dispatch_package", { p_package_id: packageId });

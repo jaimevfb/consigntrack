@@ -3,18 +3,12 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button, type ButtonProps } from "@/components/ui/button";
-import {
-  confirmDelivery,
-  markSettlementPaid,
-  confirmPaymentReceived,
-  type ActionResult,
-} from "@/app/_actions/ledger";
+import { markSettlementPaid, confirmPaymentReceived, type ActionResult } from "@/app/_actions/ledger";
 
-type Kind = "confirmDelivery" | "markPaid" | "confirmReceived";
+type Kind = "markPaid" | "confirmReceived";
 
 const actions: Record<Kind, (id: string) => Promise<ActionResult>> = {
-  confirmDelivery,
-  markPaid: markSettlementPaid,
+  markPaid: (id) => markSettlementPaid(id),
   confirmReceived: confirmPaymentReceived,
 };
 
@@ -42,10 +36,7 @@ export function RowActionButton({
     setPending(true);
     const res = await actions[kind](id);
     setPending(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
-    }
+    if (!res.ok) { setError(res.error); return; }
     router.refresh();
   }
 
