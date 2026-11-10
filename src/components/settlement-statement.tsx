@@ -46,7 +46,7 @@ export function SettlementStatementButton({ statement: s, label = "Statement" }:
         <div class="r"><div><b>${s.consignor_name}</b></div><div class="sub">${s.store_name}</div><div class="sub">${s.status.toUpperCase()}</div></div></div>
       <div class="grid">
         <div class="box"><b>Period</b><div>${formatDate(s.period_start)} – ${formatDate(s.period_end)}</div><div class="sub">Generated ${formatDateTime(s.created_at)}</div></div>
-        <div class="box"><b>Terms</b><div>${s.commission_pct}% commission · ${s.cadence}</div><div class="sub">${s.consignment_period_days}-day period · ${s.damage_liability}-liable</div></div>
+        <div class="box"><b>Terms</b><div>${s.commission_pct}% commission · ${s.cadence}</div><div class="sub">${s.consignment_period_days}-day consignment period</div></div>
         ${pay}
       </div>
       <table><thead><tr><th>Product</th><th class="r">Qty sold</th><th class="r">Unit</th><th class="r">Gross</th><th class="r">Comm%</th><th class="r">Commission</th><th class="r">Net</th></tr></thead>
@@ -87,7 +87,7 @@ export function SettlementStatementButton({ statement: s, label = "Statement" }:
                 </Meta>
                 <Meta label="Terms">
                   <div className="font-medium">{s.commission_pct}% commission · <span className="capitalize">{s.cadence}</span></div>
-                  <div className="text-xs text-muted-foreground">{s.consignment_period_days}-day period · {s.damage_liability}-liable</div>
+                  <div className="text-xs text-muted-foreground">{s.consignment_period_days}-day consignment period</div>
                 </Meta>
                 <Meta label="Status">
                   <SettlementStatusPill status={s.status} />
