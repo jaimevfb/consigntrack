@@ -6,6 +6,7 @@ import { getPackageDetail } from "@/lib/ledger-data";
 import { PackageTimeline } from "@/components/package-timeline";
 import { PackageQrCard } from "@/components/package-qr-card";
 import { VoidPackageButton } from "@/components/void-package-button";
+import { ReportLostButton } from "@/components/report-lost-button";
 import { StatusPill } from "@/components/status-pill";
 import { Wordmark } from "@/components/brand";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import { formatDateTime } from "@/lib/utils";
 
 export const metadata = { title: "Package" };
 
-const TONE: Record<string, "ok" | "warn" | "info" | "neutral"> = { DELIVERED: "ok", RECEIVED_BY_CONSIGNOR: "ok", PARTIAL_DISPUTED: "warn", IN_TRANSIT: "info", RETURN_IN_TRANSIT: "info", PACKED: "neutral" };
+const TONE: Record<string, "ok" | "warn" | "info" | "neutral"> = { DELIVERED: "ok", RECEIVED_BY_CONSIGNOR: "ok", PARTIAL_DISPUTED: "warn", LOST: "warn", IN_TRANSIT: "info", RETURN_IN_TRANSIT: "info", PACKED: "neutral", VOID: "neutral" };
 function label(s: string) { return s.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()); }
 
 export default async function PackageDetailPage({ params }: { params: { id: string } }) {
@@ -27,6 +28,8 @@ export default async function PackageDetailPage({ params }: { params: { id: stri
   const owns = isReturn ? profile.store_id === pkg.consignee_id : profile.consignor_id === pkg.consignor_id;
   const canVoid = voidable && (owns || profile.role === "admin");
   const dispatched = pkg.status === "IN_TRANSIT" || pkg.status === "RETURN_IN_TRANSIT";
+  const isParty = profile.consignor_id === pkg.consignor_id || profile.store_id === pkg.consignee_id || profile.role === "admin";
+  const canWriteOff = dispatched && isParty;
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,6 +46,7 @@ export default async function PackageDetailPage({ params }: { params: { id: stri
           <div className="flex flex-col items-end gap-2">
             <StatusPill tone={TONE[pkg.status] ?? "neutral"}>{label(pkg.status)}</StatusPill>
             {canVoid ? <VoidPackageButton packageId={pkg.id} pkgCode={pkg.pkg_code} dispatched={dispatched} /> : null}
+            {canWriteOff ? <ReportLostButton packageId={pkg.id} pkgCode={pkg.pkg_code} liability={pkg.liability} /> : null}
           </div>
         </div>
 

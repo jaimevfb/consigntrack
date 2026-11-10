@@ -109,6 +109,16 @@ export async function voidPackageAction(packageId: string): Promise<ActionResult
   return { ok: true };
 }
 
+export async function writeOffPackageAction(packageId: string, reason?: string): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("write_off_package", { p_package_id: packageId, p_reason: reason ?? null });
+  if (error) return { ok: false, error: clean(error.message) };
+  revalidatePath("/consignor/shipments");
+  revalidatePath("/store/deliveries");
+  revalidatePath("/store/returns");
+  return { ok: true };
+}
+
 export async function dispatchReturnPackageAction(packageId: string): Promise<ActionResult> {
   const supabase = createClient();
   const { error } = await supabase.rpc("dispatch_return_package", { p_package_id: packageId });
