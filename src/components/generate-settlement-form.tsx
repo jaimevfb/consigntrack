@@ -56,44 +56,31 @@ export function GenerateSettlementForm({ agreements }: { agreements: AgreementOp
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Generate a statement</CardTitle>
-      </CardHeader>
+      <CardHeader className="pb-3"><CardTitle className="text-base">Generate a statement</CardTitle></CardHeader>
       <CardContent>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1.5">
+        <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[220px] flex-1 space-y-1.5">
             <Label>Agreement</Label>
             <Select value={agreementId} onValueChange={setAgreementId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select an agreement" />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Select an agreement" /></SelectTrigger>
               <SelectContent>
-                {agreements.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.consignorName} · {a.commissionPct}% · {a.cadence}
-                  </SelectItem>
-                ))}
+                {agreements.map((a) => (<SelectItem key={a.id} value={a.id}>{a.consignorName} · {a.commissionPct}% · {a.cadence}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="ps">Period start</Label>
-              <Input id="ps" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="pe">Period end</Label>
-              <Input id="pe" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ps">Period start</Label>
+            <Input id="ps" type="date" value={start} onChange={(e) => setStart(e.target.value)} className="w-[160px]" />
           </div>
-          {error ? (
-            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
-          ) : null}
-          {ok ? <p className="text-sm text-ok-foreground">Statement generated below.</p> : null}
+          <div className="space-y-1.5">
+            <Label htmlFor="pe">Period end</Label>
+            <Input id="pe" type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="w-[160px]" />
+          </div>
           <Button type="submit" disabled={saving || agreements.length === 0}>
-            <FileText className="h-4 w-4" />
-            {saving ? "Generating…" : "Generate statement"}
+            <FileText className="h-4 w-4" />{saving ? "Generating…" : "Generate"}
           </Button>
+          {error ? <p className="w-full rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
+          {ok ? <p className="w-full text-sm text-ok-foreground">Statement generated below.</p> : null}
         </form>
       </CardContent>
     </Card>
