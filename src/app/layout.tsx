@@ -11,8 +11,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "ConsignTrack | Consignment operations",
-    template: "%s | ConsignTrack",
+    default: "ConsignTrack",
+    template: "%s · ConsignTrack",
   },
   description:
     "A shared operations platform for consignment inventory, sales, and settlement records.",

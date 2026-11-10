@@ -11,25 +11,18 @@ import { Wordmark } from "@/components/brand";
 
 export default function AuthPage() {
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 py-12">
-      {/* colourful aurora backdrop */}
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-[#4F46E5] via-[#3B82F6] to-[#06B6D4]" />
-      <div aria-hidden className="absolute -left-24 -top-24 h-[28rem] w-[28rem] rounded-full bg-[#A855F7]/50 blur-3xl" />
-      <div aria-hidden className="absolute right-[-12%] top-[15%] h-[30rem] w-[30rem] rounded-full bg-[#22D3EE]/40 blur-3xl" />
-      <div aria-hidden className="absolute bottom-[-18%] left-[28%] h-[26rem] w-[26rem] rounded-full bg-[#6366F1]/50 blur-3xl" />
-      <div aria-hidden className="absolute inset-0 opacity-[0.12]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "26px 26px" }} />
-
+    <main className="relative flex min-h-screen items-center justify-center bg-[#F7F8FC] px-6 py-12">
+      {/* a restrained touch of brand at the top */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-[#EEF2FF] to-transparent" />
       <div className="relative z-10 w-full max-w-sm">
-        <div className="mb-6 flex justify-center">
-          <Wordmark inverted className="text-white [&_span]:text-white" />
-        </div>
-        <div className="overflow-hidden rounded-2xl border border-white/20 bg-card shadow-2xl ring-1 ring-black/5">
-          <div aria-hidden className="h-1.5 bg-gradient-to-r from-[#3B82F6] via-[#22D3EE] to-[#A855F7]" />
+        <div className="mb-6 flex justify-center"><Wordmark /></div>
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+          <div aria-hidden className="h-1 bg-gradient-to-r from-[#2743C9] to-[#4F46E5]" />
           <div className="p-6 sm:p-7">
             <LoginForm />
           </div>
         </div>
-        <p className="mt-5 text-center text-xs text-white/75">Made for independent makers &amp; retailers.</p>
+        <p className="mt-6 text-center text-xs text-muted-foreground">© {new Date().getFullYear()} ConsignTrack</p>
       </div>
     </main>
   );

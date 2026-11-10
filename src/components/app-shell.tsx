@@ -163,7 +163,7 @@ export function AppShell({
     <div className="min-h-screen bg-[var(--canvas)]">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-card lg:flex">
-        <div className="flex h-16 items-center border-b border-border px-5">
+        <div className="flex h-16 items-center px-5">
           <Link href="/" aria-label="ConsignTrack home">
             <Wordmark />
           </Link>
