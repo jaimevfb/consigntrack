@@ -20,7 +20,8 @@ export default async function StoreLayout({ children }: { children: React.ReactN
   const isManager = profile.role === "store_manager" || profile.role === "admin";
   const nav = [
     { href: "/store", label: "Dashboard", icon: "dashboard" },
-    { href: "/store/catalog", label: "Products", icon: "catalog" },
+    ...(isManager ? [{ href: "/store/analytics", label: "Analytics", icon: "analytics" }] : []),
+    { href: "/store/catalog", label: "Catalog", icon: "catalog" },
     { href: "/store/scan", label: "Scan items", icon: "scan" },
     { href: "/store/items", label: "Item records", icon: "items" },
     { href: "/store/sales", label: "Sales", icon: "sell" },
