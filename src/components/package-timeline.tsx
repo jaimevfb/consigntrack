@@ -25,21 +25,31 @@ export function PackageTimeline({ pkg }: { pkg: PackageDetail }) {
   }
 
   return (
-    <ol className="relative ml-3 space-y-5 border-l border-border pl-6">
-      {steps.map((s, i) => (
-        <li key={i} className="relative">
-          <span className={[
-            "absolute -left-[33px] flex h-7 w-7 items-center justify-center rounded-full border-2 bg-card",
-            s.warn ? "border-warn-foreground text-warn-foreground" : s.done ? "border-primary text-primary" : "border-border text-muted-foreground",
-          ].join(" ")}>
-            {s.warn ? <AlertTriangle className="h-3.5 w-3.5" /> : s.done ? <Check className="h-3.5 w-3.5" /> : <span className="tnum text-xs">{i + 1}</span>}
-          </span>
-          <div className="flex items-baseline justify-between gap-2">
-            <span className={`text-sm font-medium ${s.done ? "" : "text-muted-foreground"}`}>{s.label}</span>
-            {s.at ? <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(s.at)}</span> : <span className="shrink-0 text-xs text-muted-foreground">pending</span>}
-          </div>
-        </li>
-      ))}
+    <ol>
+      {steps.map((s, i) => {
+        const last = i === steps.length - 1;
+        return (
+          <li key={i} className="flex gap-3.5">
+            {/* marker + connector column, centered */}
+            <div className="flex flex-col items-center">
+              <span className={[
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 bg-card",
+                s.warn ? "border-warn-foreground text-warn-foreground" : s.done ? "border-primary text-primary" : "border-border text-muted-foreground",
+              ].join(" ")}>
+                {s.warn ? <AlertTriangle className="h-4 w-4" /> : s.done ? <Check className="h-4 w-4" /> : <span className="tnum text-xs">{i + 1}</span>}
+              </span>
+              {!last ? <span className={`my-1 w-0.5 flex-1 rounded-full ${s.done ? "bg-primary/40" : "bg-border"}`} /> : null}
+            </div>
+            {/* content */}
+            <div className={`min-w-0 flex-1 pt-1 ${last ? "pb-0" : "pb-6"}`}>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                <span className={`text-sm font-medium ${s.done ? "" : "text-muted-foreground"}`}>{s.label}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">{s.at ? formatDateTime(s.at) : "pending"}</span>
+              </div>
+            </div>
+          </li>
+        );
+      })}
     </ol>
   );
 }
