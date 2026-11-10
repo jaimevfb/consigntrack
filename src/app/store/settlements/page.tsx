@@ -4,6 +4,7 @@ import { GenerateSettlementForm, type AgreementOption } from "@/components/gener
 import { SettlementStatusPill, StatusPill } from "@/components/status-pill";
 import { SettlementPayDialog } from "@/components/settlement-pay-dialog";
 import { PaymentReceipt } from "@/components/payment-receipt";
+import { SettlementStatementButton, type SettlementStatement } from "@/components/settlement-statement";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatPHP, formatDate } from "@/lib/utils";
@@ -20,7 +21,7 @@ export default async function StorePartnersSettlementsPage() {
       .select("id, commission_pct, settlement_cadence, consignment_period_days, damage_liability, end_of_period_action, consignors(name)")
       .eq("store_id", profile.store_id).eq("is_active", true),
     supabase.from("settlements")
-      .select("*, agreements!inner(store_id, consignors(name)), payments(paid_at, confirmed_at, method, reference)")
+      .select("*, agreements!inner(store_id, commission_pct, settlement_cadence, consignment_period_days, damage_liability, stores(name), consignors(name)), payments(paid_at, confirmed_at, method, reference, amount), settlement_lines(qty_sold, gross, unit_price, commission_pct, commission, products(sku, name))")
       .eq("agreements.store_id", profile.store_id)
       .order("period_end", { ascending: false }),
   ]);
@@ -32,10 +33,23 @@ export default async function StorePartnersSettlementsPage() {
   const agreementOptions: AgreementOption[] = agr.map((a) => ({ id: a.id, consignorName: a.consignors?.name ?? "—", commissionPct: a.commission_pct, cadence: a.settlement_cadence }));
 
   const rows = ((settlements ?? []) as unknown as Array<{
-    id: string; period_start: string; period_end: string; gross_sales: number; commission: number; net_payable: number; status: string;
-    agreements: { consignors: { name: string } | null } | null;
-    payments: { paid_at: string | null; confirmed_at: string | null; method: string | null; reference: string | null }[];
+    id: string; period_start: string; period_end: string; created_at: string;
+    gross_sales: number; commission: number; returns_total: number; damage_total: number; net_payable: number; status: string;
+    agreements: { commission_pct: number; settlement_cadence: string; consignment_period_days: number; damage_liability: string; stores: { name: string } | null; consignors: { name: string } | null } | null;
+    payments: { paid_at: string | null; confirmed_at: string | null; method: string | null; reference: string | null; amount: number | null }[];
+    settlement_lines: { qty_sold: number; gross: number; unit_price: number | null; commission_pct: number | null; commission: number; products: { sku: string; name: string } | null }[];
   }>);
+
+  const toStatement = (s: (typeof rows)[number]): SettlementStatement => ({
+    id: s.id, period_start: s.period_start, period_end: s.period_end, status: s.status, created_at: s.created_at,
+    consignor_name: s.agreements?.consignors?.name ?? "—", store_name: s.agreements?.stores?.name ?? "—",
+    commission_pct: s.agreements?.commission_pct ?? 0, cadence: s.agreements?.settlement_cadence ?? "—",
+    consignment_period_days: s.agreements?.consignment_period_days ?? 0, damage_liability: s.agreements?.damage_liability ?? "—",
+    gross_sales: s.gross_sales, commission: s.commission, returns_total: s.returns_total, damage_total: s.damage_total, net_payable: s.net_payable,
+    lines: (s.settlement_lines ?? []).map((l) => ({ name: l.products?.name ?? "—", sku: l.products?.sku ?? "—", qty_sold: l.qty_sold, unit_price: l.unit_price ?? 0, commission_pct: l.commission_pct ?? (s.agreements?.commission_pct ?? 0), gross: l.gross, commission: l.commission }))
+      .sort((a, b) => b.gross - a.gross),
+    payment: s.payments?.[0] ? { method: s.payments[0].method, reference: s.payments[0].reference, amount: s.payments[0].amount, paid_at: s.payments[0].paid_at, confirmed_at: s.payments[0].confirmed_at } : null,
+  });
   // Attention order: pending first, then paid-awaiting, then settled.
   const rank = (s: string) => (s === "pending" ? 0 : s === "paid" ? 1 : 2);
   rows.sort((a, b) => rank(a.status) - rank(b.status) || b.period_end.localeCompare(a.period_end));
@@ -101,11 +115,14 @@ export default async function StorePartnersSettlementsPage() {
                       <TableCell><SettlementStatusPill status={s.status} /></TableCell>
                       <TableCell><PaymentReceipt method={payment?.method ?? null} reference={payment?.reference ?? null} /></TableCell>
                       <TableCell className="text-right">
-                        {s.status === "pending" ? (
-                          <SettlementPayDialog settlementId={s.id} amount={s.net_payable} consignorName={s.agreements?.consignors?.name ?? "the consignor"} />
-                        ) : s.status === "paid" && !payment?.confirmed_at ? (
-                          <span className="whitespace-nowrap text-xs text-muted-foreground">Awaiting consignor</span>
-                        ) : <StatusPill tone="ok">Settled</StatusPill>}
+                        <div className="inline-flex items-center justify-end gap-1">
+                          <SettlementStatementButton statement={toStatement(s)} />
+                          {s.status === "pending" ? (
+                            <SettlementPayDialog settlementId={s.id} amount={s.net_payable} consignorName={s.agreements?.consignors?.name ?? "the consignor"} />
+                          ) : s.status === "paid" && !payment?.confirmed_at ? (
+                            <span className="whitespace-nowrap text-xs text-muted-foreground">Awaiting consignor</span>
+                          ) : <StatusPill tone="ok">Settled</StatusPill>}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { SettlementStatusPill } from "@/components/status-pill";
 import { RowActionButton } from "@/components/row-action-button";
 import { PaymentReceipt } from "@/components/payment-receipt";
+import { SettlementStatementButton, type SettlementStatement } from "@/components/settlement-statement";
 import { formatPHP, formatDate } from "@/lib/utils";
 
 export default async function ConsignorSettlementsPage() {
@@ -12,20 +13,21 @@ export default async function ConsignorSettlementsPage() {
   const supabase = createClient();
   const { data } = await supabase
     .from("settlements")
-    .select("*, agreements!inner(stores(name)), payments(paid_at, confirmed_at, method, reference, amount)")
+    .select("*, agreements!inner(commission_pct, settlement_cadence, consignment_period_days, damage_liability, stores(name), consignors(name)), payments(paid_at, confirmed_at, method, reference, amount), settlement_lines(qty_sold, gross, unit_price, commission_pct, commission, products(sku, name))")
     .order("period_end", { ascending: false });
 
   const rows = (data ?? []) as Array<{
     id: string;
     period_start: string;
     period_end: string;
+    created_at: string;
     gross_sales: number;
     commission: number;
     returns_total: number;
     damage_total: number;
     net_payable: number;
     status: string;
-    agreements: { stores: { name: string } | null } | null;
+    agreements: { commission_pct: number; settlement_cadence: string; consignment_period_days: number; damage_liability: string; stores: { name: string } | null; consignors: { name: string } | null } | null;
     payments: {
       paid_at: string | null;
       confirmed_at: string | null;
@@ -33,7 +35,19 @@ export default async function ConsignorSettlementsPage() {
       reference: string | null;
       amount: number | null;
     }[];
+    settlement_lines: { qty_sold: number; gross: number; unit_price: number | null; commission_pct: number | null; commission: number; products: { sku: string; name: string } | null }[];
   }>;
+
+  const toStatement = (s: (typeof rows)[number]): SettlementStatement => ({
+    id: s.id, period_start: s.period_start, period_end: s.period_end, status: s.status, created_at: s.created_at,
+    consignor_name: s.agreements?.consignors?.name ?? "—", store_name: s.agreements?.stores?.name ?? "—",
+    commission_pct: s.agreements?.commission_pct ?? 0, cadence: s.agreements?.settlement_cadence ?? "—",
+    consignment_period_days: s.agreements?.consignment_period_days ?? 0, damage_liability: s.agreements?.damage_liability ?? "—",
+    gross_sales: s.gross_sales, commission: s.commission, returns_total: s.returns_total, damage_total: s.damage_total, net_payable: s.net_payable,
+    lines: (s.settlement_lines ?? []).map((l) => ({ name: l.products?.name ?? "—", sku: l.products?.sku ?? "—", qty_sold: l.qty_sold, unit_price: l.unit_price ?? 0, commission_pct: l.commission_pct ?? (s.agreements?.commission_pct ?? 0), gross: l.gross, commission: l.commission }))
+      .sort((a, b) => b.gross - a.gross),
+    payment: s.payments?.[0] ? { method: s.payments[0].method, reference: s.payments[0].reference, amount: s.payments[0].amount, paid_at: s.payments[0].paid_at, confirmed_at: s.payments[0].confirmed_at } : null,
+  });
 
   return (
     <div className="space-y-6">
@@ -89,17 +103,18 @@ export default async function ConsignorSettlementsPage() {
                       <PaymentReceipt method={payment?.method ?? null} reference={payment?.reference ?? null} />
                     </TableCell>
                     <TableCell className="text-right">
-                      {canConfirm ? (
-                        <RowActionButton
-                          kind="confirmReceived"
-                          id={s.id}
-                          label="Confirm received"
-                          pendingLabel="Confirming…"
-                          variant="outline"
-                        />
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
+                      <div className="inline-flex items-center justify-end gap-1">
+                        <SettlementStatementButton statement={toStatement(s)} />
+                        {canConfirm ? (
+                          <RowActionButton
+                            kind="confirmReceived"
+                            id={s.id}
+                            label="Confirm received"
+                            pendingLabel="Confirming…"
+                            variant="outline"
+                          />
+                        ) : null}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
