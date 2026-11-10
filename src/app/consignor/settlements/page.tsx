@@ -63,74 +63,53 @@ export default async function ConsignorSettlementsPage() {
 
       <Card>
         <CardContent className="pt-5">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Store</TableHead>
-                <TableHead>Period</TableHead>
-                <TableHead className="text-right">Gross</TableHead>
-                <TableHead className="text-right">Commission</TableHead>
-                <TableHead className="text-right">Returns</TableHead>
-                <TableHead className="text-right">Damage</TableHead>
-                <TableHead className="text-right">Net payable</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((s) => {
-                const payment = s.payments?.[0];
-                const canConfirm = s.status === "paid" && payment?.paid_at && !payment?.confirmed_at;
-                return (
-                  <TableRow key={s.id}>
-                    <TableCell className="font-medium">{s.agreements?.stores?.name ?? "—"}</TableCell>
-                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                      {formatDate(s.period_start)} – {formatDate(s.period_end)}
-                    </TableCell>
-                    <TableCell className="tnum text-right">{formatPHP(s.gross_sales)}</TableCell>
-                    <TableCell className="tnum text-right text-muted-foreground">
-                      −{formatPHP(s.commission)}
-                    </TableCell>
-                    <TableCell className="tnum text-right text-muted-foreground">
-                      −{formatPHP(s.returns_total)}
-                    </TableCell>
-                    <TableCell className="tnum text-right text-muted-foreground">
-                      −{formatPHP(s.damage_total)}
-                    </TableCell>
-                    <TableCell className="tnum text-right font-medium">{formatPHP(s.net_payable)}</TableCell>
-                    <TableCell>
-                      <SettlementStatusPill status={s.status} />
-                    </TableCell>
-                    <TableCell>
-                      <PaymentReceipt method={payment?.method ?? null} reference={payment?.reference ?? null} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="inline-flex items-center justify-end gap-1">
-                        <SettlementStatementButton statement={toStatement(s)} />
-                        {canConfirm ? (
-                          <RowActionButton
-                            kind="confirmReceived"
-                            id={s.id}
-                            label="Confirm received"
-                            pendingLabel="Confirming…"
-                            variant="outline"
-                          />
-                        ) : null}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {rows.length === 0 ? (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-sm text-muted-foreground">
-                    No settlements yet.
-                  </TableCell>
+                  <TableHead>Store &amp; period</TableHead>
+                  <TableHead className="text-right">Net payable</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {rows.map((s) => {
+                  const payment = s.payments?.[0];
+                  const canConfirm = s.status === "paid" && payment?.paid_at && !payment?.confirmed_at;
+                  const deductions = (s.returns_total ? ` · −${formatPHP(s.returns_total)} ret` : "") + (s.damage_total ? ` · −${formatPHP(s.damage_total)} dmg` : "");
+                  return (
+                    <TableRow key={s.id}>
+                      <TableCell>
+                        <div className="whitespace-nowrap text-sm font-medium">{s.agreements?.stores?.name ?? "—"}</div>
+                        <div className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(s.period_start)} – {formatDate(s.period_end)}</div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right">
+                        <div className="tnum font-semibold">{formatPHP(s.net_payable)}</div>
+                        <div className="tnum text-xs text-muted-foreground">{formatPHP(s.gross_sales)} gross · −{formatPHP(s.commission)} comm{deductions}</div>
+                      </TableCell>
+                      <TableCell><SettlementStatusPill status={s.status} /></TableCell>
+                      <TableCell><PaymentReceipt method={payment?.method ?? null} reference={payment?.reference ?? null} /></TableCell>
+                      <TableCell className="text-right">
+                        <div className="inline-flex items-center justify-end gap-1">
+                          <SettlementStatementButton statement={toStatement(s)} />
+                          {canConfirm ? (
+                            <RowActionButton kind="confirmReceived" id={s.id} label="Confirm received" pendingLabel="Confirming…" variant="outline" />
+                          ) : null}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">No settlements yet.</TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
