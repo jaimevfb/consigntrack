@@ -11,18 +11,24 @@ import { Wordmark } from "@/components/brand";
 
 export default function AuthPage() {
   return (
-    <main className="force-light relative flex min-h-screen items-center justify-center bg-background px-6 py-12">
-      {/* a restrained touch of brand at the top */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-primary/10 to-transparent" />
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 py-12">
+      {/* brand blue gradient — matches the main site */}
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-[#141C57] via-[#2743C9] to-[#4F46E5]" />
+      <div aria-hidden className="absolute -top-32 left-1/2 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full bg-[#60A5FA]/25 blur-3xl" />
+      <div aria-hidden className="absolute -bottom-32 right-[-12%] h-[30rem] w-[30rem] rounded-full bg-[#4F46E5]/40 blur-3xl" />
+      <div aria-hidden className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "26px 26px" }} />
+
       <div className="relative z-10 w-full max-w-sm">
-        <div className="mb-6 flex justify-center"><Wordmark /></div>
-        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
-          <div aria-hidden className="h-1 bg-gradient-to-r from-[#2743C9] to-[#4F46E5]" />
+        <div className="mb-6 flex justify-center">
+          <Wordmark inverted className="text-white [&_span]:text-white" />
+        </div>
+        <div className="force-light overflow-hidden rounded-2xl border border-white/15 bg-card shadow-2xl ring-1 ring-black/5">
+          <div aria-hidden className="h-1.5 bg-gradient-to-r from-[#3B82F6] to-[#6366F1]" />
           <div className="p-6 sm:p-7">
             <LoginForm />
           </div>
         </div>
-        <p className="mt-6 text-center text-xs text-muted-foreground">© {new Date().getFullYear()} ConsignTrack</p>
+        <p className="mt-6 text-center text-xs text-white/70">© {new Date().getFullYear()} ConsignTrack</p>
       </div>
     </main>
   );
