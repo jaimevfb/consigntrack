@@ -23,7 +23,7 @@ export default function AuthPage() {
         <div className="mb-6 flex justify-center">
           <Wordmark inverted className="text-white [&_span]:text-white" />
         </div>
-        <div className="overflow-hidden rounded-2xl border border-white/20 bg-card/95 shadow-2xl ring-1 ring-black/5 backdrop-blur-xl">
+        <div className="overflow-hidden rounded-2xl border border-white/20 bg-card shadow-2xl ring-1 ring-black/5">
           <div aria-hidden className="h-1.5 bg-gradient-to-r from-[#3B82F6] via-[#22D3EE] to-[#A855F7]" />
           <div className="p-6 sm:p-7">
             <LoginForm />
