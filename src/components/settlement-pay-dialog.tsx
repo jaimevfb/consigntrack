@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Wallet, ShieldCheck, X, Check } from "lucide-react";
 import { paySettlement } from "@/app/_actions/ledger";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatPHP } from "@/lib/utils";
@@ -32,19 +31,14 @@ export function SettlementPayDialog({
   const due = remaining ?? amount;
   const [open, setOpen] = React.useState(false);
   const [method, setMethod] = React.useState("gcash");
-  const [pay, setPay] = React.useState<string>(String(due));
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [done, setDone] = React.useState(false);
 
-  const payNum = Number(pay) || 0;
-  const partial = payNum > 0 && payNum < due - 0.01;
-
   async function send() {
     setError(null);
-    if (payNum <= 0) { setError("Enter an amount to pay."); return; }
     setBusy(true);
-    const res = await paySettlement(settlementId, payNum, method);
+    const res = await paySettlement(settlementId, due, method);
     setBusy(false);
     if (!res.ok) return setError(res.error);
     setDone(true);
@@ -54,14 +48,14 @@ export function SettlementPayDialog({
 
   return (
     <>
-      <Button size="sm" onClick={() => { setOpen(true); setDone(false); setError(null); setPay(String(due)); }}>
+      <Button size="sm" onClick={() => { setOpen(true); setDone(false); setError(null); }}>
         <Wallet className="h-4 w-4" /> Send payment
       </Button>
 
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" onClick={() => !busy && setOpen(false)} />
-          <div className="relative w-full max-w-sm rounded-xl border border-border bg-card p-5 shadow-xl">
+          <div className="relative w-full max-w-sm rounded-xl border border-border bg-card p-5 text-left shadow-xl">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-base font-semibold">Cashless settlement</h3>
@@ -87,34 +81,23 @@ export function SettlementPayDialog({
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="pay-amount">Amount</Label>
-                    <Input id="pay-amount" type="number" min={0} max={due} inputMode="decimal" value={pay} onChange={(e) => setPay(e.target.value)} className="tnum" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="pay-method">Pay with</Label>
-                    <Select value={method} onValueChange={setMethod}>
-                      <SelectTrigger id="pay-method"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {METHODS.map((m) => (<SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="pay-method">Pay with</Label>
+                  <Select value={method} onValueChange={setMethod}>
+                    <SelectTrigger id="pay-method"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {METHODS.map((m) => (<SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  <button type="button" onClick={() => setPay(String(due))} className="rounded-md border border-border px-2 py-0.5 text-xs hover:bg-muted">Full {formatPHP(due)}</button>
-                  <button type="button" onClick={() => setPay(String(Math.round(due / 2)))} className="rounded-md border border-border px-2 py-0.5 text-xs hover:bg-muted">Half</button>
-                </div>
-                {partial ? <p className="mt-2 text-xs text-muted-foreground">Partial payment — {formatPHP(due - payNum)} balance carries to the statement.</p> : null}
 
                 {error ? <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
 
                 <Button className="mt-4 w-full" onClick={send} disabled={busy}>
-                  {busy ? "Sending…" : `Send ${formatPHP(payNum)}`}
+                  {busy ? "Sending…" : `Send ${formatPHP(due)}`}
                 </Button>
-                <p className="mt-2 flex items-center justify-center gap-1 text-[11px] text-muted-foreground">
-                  <ShieldCheck className="h-3 w-3" /> Demo rail — a transaction reference is recorded, no funds move.
+                <p className="mt-2 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                  <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0" /> Demo rail — a transaction reference is recorded, no funds move.
                 </p>
               </>
             )}
