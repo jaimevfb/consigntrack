@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wordmark } from "@/components/brand";
 
 export default function AuthPage() {
   return (
@@ -19,12 +18,8 @@ export default function AuthPage() {
       <div aria-hidden className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "26px 26px" }} />
 
       <div className="relative z-10 w-full max-w-sm">
-        <div className="mb-6 flex justify-center">
-          <Wordmark inverted className="text-white [&_span]:text-white" />
-        </div>
         <div className="force-light overflow-hidden rounded-2xl border border-white/15 bg-card shadow-2xl ring-1 ring-black/5">
-          <div aria-hidden className="h-1.5 bg-gradient-to-r from-[#3B82F6] to-[#6366F1]" />
-          <div className="p-6 sm:p-7">
+          <div className="p-7 sm:p-8">
             <LoginForm />
           </div>
         </div>
