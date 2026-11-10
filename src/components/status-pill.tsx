@@ -41,13 +41,14 @@ export function StatusPill({
 
 const settlementTone: Record<string, Tone> = {
   pending: "warn",
+  partial: "warn",
   paid: "info",
   confirmed: "ok",
 };
 
 export function SettlementStatusPill({ status }: { status: string }) {
   const label =
-    status === "confirmed" ? "Confirmed" : status === "paid" ? "Paid — awaiting" : "Pending";
+    status === "confirmed" ? "Confirmed" : status === "paid" ? "Paid — awaiting" : status === "partial" ? "Part-paid" : "Pending";
   return <StatusPill tone={settlementTone[status] ?? "neutral"}>{label}</StatusPill>;
 }
 

@@ -107,6 +107,8 @@ export default async function StorePartnersSettlementsPage() {
               <TableBody>
                 {rows.map((s) => {
                   const payment = s.payments?.[0];
+                  const paid = (s.payments ?? []).reduce((a, p) => a + Number(p.amount ?? 0), 0);
+                  const remaining = Math.max(0, Math.round((s.net_payable - paid) * 100) / 100);
                   return (
                     <TableRow key={s.id}>
                       <TableCell className="whitespace-nowrap">
@@ -115,15 +117,17 @@ export default async function StorePartnersSettlementsPage() {
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right">
                         <div className="tnum font-semibold">{formatPHP(s.net_payable)}</div>
-                        <div className="tnum text-xs text-muted-foreground">{formatPHP(s.gross_sales)} gross · −{formatPHP(s.commission)} comm</div>
+                        {s.status === "partial"
+                          ? <div className="tnum text-xs text-warn-foreground">{formatPHP(paid)} paid · {formatPHP(remaining)} due</div>
+                          : <div className="tnum text-xs text-muted-foreground">{formatPHP(s.gross_sales)} gross · −{formatPHP(s.commission)} comm</div>}
                       </TableCell>
                       <TableCell><SettlementStatusPill status={s.status} /></TableCell>
                       <TableCell><PaymentReceipt method={payment?.method ?? null} reference={payment?.reference ?? null} /></TableCell>
                       <TableCell className="text-right">
                         <div className="inline-flex items-center justify-end gap-1">
                           <SettlementStatementButton statement={toStatement(s)} />
-                          {s.status === "pending" ? (
-                            <SettlementPayDialog settlementId={s.id} amount={s.net_payable} consignorName={s.agreements?.consignors?.name ?? "the consignor"} />
+                          {s.status === "pending" || s.status === "partial" ? (
+                            <SettlementPayDialog settlementId={s.id} amount={s.net_payable} remaining={remaining} consignorName={s.agreements?.consignors?.name ?? "the consignor"} />
                           ) : s.status === "paid" && !payment?.confirmed_at ? (
                             <span className="whitespace-nowrap text-xs text-muted-foreground">Awaiting consignor</span>
                           ) : <StatusPill tone="ok">Settled</StatusPill>}

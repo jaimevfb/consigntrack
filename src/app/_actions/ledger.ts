@@ -25,6 +25,25 @@ export async function markSettlementPaid(
   return { ok: true };
 }
 
+export async function paySettlement(
+  settlementId: string,
+  amount: number,
+  method: string = "gcash",
+  reference?: string,
+): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("pay_settlement", {
+    p_settlement_id: settlementId,
+    p_amount: amount,
+    p_method: method,
+    p_reference: reference ?? null,
+  });
+  if (error) return { ok: false, error: error.message.replace(/^.*?:\s*/, "") };
+  revalidatePath("/store/settlements");
+  revalidatePath("/consignor/settlements");
+  return { ok: true };
+}
+
 export async function confirmPaymentReceived(settlementId: string): Promise<ActionResult> {
   const supabase = createClient();
   const { error } = await supabase.rpc("confirm_payment_received", { p_settlement_id: settlementId });
