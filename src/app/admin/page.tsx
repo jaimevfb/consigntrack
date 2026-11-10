@@ -98,7 +98,7 @@ export default async function AdminPage() {
       </Card>
 
       <CustodySummary counts={itemCounts} itemsHref="/admin/items" />
-      <AlertsPanel alerts={alerts} title="System alerts and discrepancies" />
+      <AlertsPanel alerts={alerts} title="System alerts and discrepancies" moreHref="/admin/items" />
 
       <Card>
         <CardHeader>

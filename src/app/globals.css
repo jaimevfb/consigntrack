@@ -102,10 +102,11 @@
     font-weight: 650;
     letter-spacing: -0.025em;
   }
-  /* Tabular figures for all ledger numbers. */
+  /* Ledger numbers: the standardized sans, with aligned tabular figures. */
   .tnum {
-    font-family: theme("fontFamily.mono");
+    font-family: theme("fontFamily.sans");
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
   }
   :focus-visible {
     outline: 2px solid var(--ring);

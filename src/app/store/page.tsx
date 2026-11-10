@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { ShoppingCart, Users, Package, Coins, FileClock, ArrowUpRight } from "lucide-react";
+import { ShoppingCart, Boxes, Coins, FileClock, Package } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { getStoreDashboard, getStoreAnalytics, getAlerts } from "@/lib/data";
 import { getItemStatusCounts } from "@/lib/items-data";
 import { AlertsPanel } from "@/components/alerts-panel";
 import { CustodySummary } from "@/components/custody-summary";
 import { StaffDashboard } from "@/components/staff-dashboard";
-import { AreaTrend, Donut, RankedBars } from "@/components/charts";
-import { KpiTile, MiniStat } from "@/components/kpi-tile";
+import { AreaTrend, RankedBars } from "@/components/charts";
+import { KpiTile } from "@/components/kpi-tile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPHP, formatNumber } from "@/lib/utils";
@@ -21,7 +21,6 @@ export default async function StoreDashboardPage() {
       </div>
     );
   }
-  const isManager = profile.role === "store_manager" || profile.role === "admin";
 
   // Store staff get a task-focused operational view (no financials).
   if (profile.role === "store_staff") {
@@ -40,28 +39,20 @@ export default async function StoreDashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">A summary of store activity, inventory, and consignor settlements.</p>
+          <p className="text-sm text-muted-foreground">Your sales, inventory, and settlements at a glance.</p>
         </div>
-        <div className="flex gap-2">
-          {isManager ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href="/store/analytics">
-                View analytics <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          ) : null}
-          <Button asChild size="sm">
-            <Link href="/store/sales">
-              <ShoppingCart className="h-4 w-4" /> Record sale
-            </Link>
-          </Button>
-        </div>
+        <Button asChild size="sm">
+          <Link href="/store/sales">
+            <ShoppingCart className="h-4 w-4" /> Record sale
+          </Link>
+        </Button>
       </div>
 
+      {/* The three things that matter — sales, inventory, settlement — plus volume. */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiTile icon={Coins} label="Gross sales" hint="Last 30 days" value={formatPHP(analytics.tiles.gross30)} delta={analytics.tiles.deltaPct} />
-        <KpiTile icon={Users} label="Consignors" hint="Active agreements" value={formatNumber(dash.tiles.consignors)} />
-        <KpiTile icon={Package} label="Items on hand" hint="All consignors" value={formatNumber(dash.tiles.onHand)} />
+        <KpiTile icon={ShoppingCart} label="Units sold" hint="Last 30 days" value={formatNumber(analytics.tiles.units30)} />
+        <KpiTile icon={Boxes} label="Items on hand" hint="In your inventory" value={formatNumber(dash.tiles.onHand)} />
         <KpiTile
           icon={FileClock}
           label="Settlements due"
@@ -71,61 +62,37 @@ export default async function StoreDashboardPage() {
         />
       </div>
 
+      {/* Sales trend + what's selling — one clean analytics row, no repeated figures. */}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Daily sales trend</CardTitle>
+          <CardHeader className="pb-2">
+            <div className="flex items-baseline justify-between">
+              <CardTitle className="text-base">Daily sales</CardTitle>
               <span className="text-xs text-muted-foreground">Last 14 days</span>
-            </div>
-            <div className="mt-3 flex gap-6">
-              <MiniStat label="Gross sales (30d)" value={formatPHP(analytics.tiles.gross30)} />
-              <MiniStat label="Units sold (30d)" value={formatNumber(analytics.tiles.units30)} />
-              <MiniStat label="Average sale (30d)" value={formatPHP(analytics.tiles.avgOrder)} />
             </div>
           </CardHeader>
           <CardContent>
-            <AreaTrend points={analytics.series} valueLabel={(n) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n))} />
+            <AreaTrend points={analytics.series} height={200} valueLabel={formatPHP} />
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Sales by consignor</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Top products</CardTitle>
           </CardHeader>
           <CardContent>
-            {analytics.mix.some((m) => m.value > 0) ? (
-              <Donut segments={analytics.mix.map((m) => ({ label: `${m.label} · ${formatPHP(m.value)}`, value: m.value }))} centerLabel="carried" centerValue={String(dash.tiles.consignors)} />
+            {analytics.topProducts.length > 0 ? (
+              <RankedBars rows={analytics.topProducts.slice(0, 5).map((p) => ({ label: p.name, value: p.gross, sub: `${p.qtySold} sold` }))} valueFormat={formatPHP} />
             ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">Sales by consignor will appear here once recorded.</p>
+              <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+                <Package className="h-4 w-4" /> No sales recorded yet.
+              </p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Top products</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RankedBars rows={analytics.topProducts.map((p) => ({ label: p.name, value: p.gross, sub: `${p.qtySold} sold` }))} valueFormat={formatPHP} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Inventory by consignor</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RankedBars
-              rows={dash.consignors.map((c) => ({ label: c.consignorName, value: c.onHand, sub: `${formatPHP(c.owed)} owed` }))}
-              valueFormat={formatNumber}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
       <CustodySummary counts={itemCounts} itemsHref="/store/items" />
-      <AlertsPanel alerts={alerts} />
+      <AlertsPanel alerts={alerts} maxItems={4} />
     </div>
   );
 }

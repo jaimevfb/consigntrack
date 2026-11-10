@@ -104,7 +104,7 @@ export function AreaTrend({
           return (
             <g key={i}>
               <line x1={padL} x2={w - padR} y1={y} y2={y} stroke="var(--border)" strokeWidth={1} strokeDasharray="3 4" />
-              <text x={padL - 8} y={y + 3} textAnchor="end" className="fill-[var(--muted-foreground)]" style={{ fontSize: 9, fontFamily: "ui-monospace, monospace" }}>
+              <text x={padL - 8} y={y + 3} textAnchor="end" className="fill-[var(--muted-foreground)]" style={{ fontSize: 9, fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif' }}>
                 {valueLabel(Math.round(max * f))}
               </text>
             </g>
@@ -114,7 +114,7 @@ export function AreaTrend({
         <path d={line} fill="none" stroke={stroke} strokeWidth={2} vectorEffect="non-scaling-stroke" />
         {points.map((p, i) =>
           i % labelEvery === 0 || i === points.length - 1 ? (
-            <text key={i} x={padL + i * step} y={h - 6} textAnchor="middle" className="fill-[var(--muted-foreground)]" style={{ fontSize: 9, fontFamily: "ui-monospace, monospace" }}>
+            <text key={i} x={padL + i * step} y={h - 6} textAnchor="middle" className="fill-[var(--muted-foreground)]" style={{ fontSize: 9, fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif' }}>
               {p.label}
             </text>
           ) : null,
@@ -176,7 +176,7 @@ export function Donut({
             return el;
           })}
         {centerValue ? (
-          <text x={r} y={r - 2} textAnchor="middle" className="fill-[var(--foreground)]" style={{ fontSize: size * 0.16, fontWeight: 600, fontFamily: "ui-monospace, monospace" }}>
+          <text x={r} y={r - 2} textAnchor="middle" className="fill-[var(--foreground)]" style={{ fontSize: size * 0.16, fontWeight: 600, fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif' }}>
             {centerValue}
           </text>
         ) : null}

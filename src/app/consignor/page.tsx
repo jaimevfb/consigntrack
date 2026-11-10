@@ -168,7 +168,7 @@ export default async function ConsignorDashboardPage() {
       </div>
 
       <CustodySummary counts={itemCounts} itemsHref="/consignor/items" />
-      <AlertsPanel alerts={alerts} />
+      <AlertsPanel alerts={alerts} moreHref="/consignor/items" />
     </div>
   );
 }
