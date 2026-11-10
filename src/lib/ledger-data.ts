@@ -109,7 +109,7 @@ export async function getStorePackages(storeId: string, opts?: { direction?: str
 }
 
 export interface PackageDetail {
-  id: string; pkg_code: string; qr_token: string; direction: string; status: string; consignor_id: string; consignor_name: string; store_name: string;
+  id: string; pkg_code: string; qr_token: string; direction: string; status: string; consignor_id: string; consignee_id: string; consignor_name: string; store_name: string;
   created_at: string; in_transit_at: string | null; updated_at: string; settled_at: string | null;
   lines: { id: string; sku_id: string; sku: string; name: string; qty_expected: number; qty_received: number | null; qty_disputed: number }[];
   events: { entry_type: string; qty: number; created_at: string; reason: string | null }[];
@@ -119,11 +119,11 @@ export async function getPackageDetail(packageId: string): Promise<PackageDetail
   const supabase = createClient();
   const { data: pkg } = await supabase
     .from("packages")
-    .select("id, pkg_code, qr_token, direction, status, consignor_id, created_at, in_transit_at, updated_at, settled_at, consignors(name), stores(name), package_lines(id, sku_id, qty_expected, qty_received, qty_disputed, products(sku, name))")
+    .select("id, pkg_code, qr_token, direction, status, consignor_id, consignee_id, created_at, in_transit_at, updated_at, settled_at, consignors(name), stores(name), package_lines(id, sku_id, qty_expected, qty_received, qty_disputed, products(sku, name))")
     .eq("id", packageId).maybeSingle();
   if (!pkg) return null;
   const p = pkg as unknown as {
-    id: string; pkg_code: string; qr_token: string; direction: string; status: string; consignor_id: string;
+    id: string; pkg_code: string; qr_token: string; direction: string; status: string; consignor_id: string; consignee_id: string;
     created_at: string; in_transit_at: string | null; updated_at: string; settled_at: string | null;
     consignors: { name: string } | null; stores: { name: string } | null;
     package_lines: Array<{ id: string; sku_id: string; qty_expected: number; qty_received: number | null; qty_disputed: number; products: { sku: string; name: string } | null }>;
@@ -133,7 +133,7 @@ export async function getPackageDetail(packageId: string): Promise<PackageDetail
     .eq("ref_type", "package").eq("ref_id", packageId).order("created_at", { ascending: true });
   return {
     id: p.id, pkg_code: p.pkg_code, qr_token: p.qr_token, direction: p.direction, status: p.status,
-    consignor_id: p.consignor_id, consignor_name: p.consignors?.name ?? "—", store_name: p.stores?.name ?? "—",
+    consignor_id: p.consignor_id, consignee_id: p.consignee_id, consignor_name: p.consignors?.name ?? "—", store_name: p.stores?.name ?? "—",
     created_at: p.created_at, in_transit_at: p.in_transit_at, updated_at: p.updated_at, settled_at: p.settled_at,
     lines: p.package_lines.map((l) => ({
       id: l.id, sku_id: l.sku_id, sku: l.products?.sku ?? "—", name: l.products?.name ?? "—",

@@ -5,6 +5,7 @@ import { requireProfile, homeForRole } from "@/lib/auth";
 import { getPackageDetail } from "@/lib/ledger-data";
 import { PackageTimeline } from "@/components/package-timeline";
 import { PackageQrCard } from "@/components/package-qr-card";
+import { VoidPackageButton } from "@/components/void-package-button";
 import { StatusPill } from "@/components/status-pill";
 import { Wordmark } from "@/components/brand";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,10 @@ export default async function PackageDetailPage({ params }: { params: { id: stri
   if (!pkg) notFound();
   const home = homeForRole(profile.role);
   const isReturn = pkg.direction === "RETURN";
+  const voidable = ["PACKED", "IN_TRANSIT", "RETURN_PACKED", "RETURN_IN_TRANSIT"].includes(pkg.status);
+  const owns = isReturn ? profile.store_id === pkg.consignee_id : profile.consignor_id === pkg.consignor_id;
+  const canVoid = voidable && (owns || profile.role === "admin");
+  const dispatched = pkg.status === "IN_TRANSIT" || pkg.status === "RETURN_IN_TRANSIT";
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,7 +40,10 @@ export default async function PackageDetailPage({ params }: { params: { id: stri
             <h1 className="tnum text-2xl font-bold">{pkg.pkg_code}</h1>
             <p className="text-sm text-muted-foreground">{isReturn ? "Return" : "Shipment"} · {pkg.consignor_name} {isReturn ? "←" : "→"} {pkg.store_name}</p>
           </div>
-          <StatusPill tone={TONE[pkg.status] ?? "neutral"}>{label(pkg.status)}</StatusPill>
+          <div className="flex flex-col items-end gap-2">
+            <StatusPill tone={TONE[pkg.status] ?? "neutral"}>{label(pkg.status)}</StatusPill>
+            {canVoid ? <VoidPackageButton packageId={pkg.id} pkgCode={pkg.pkg_code} dispatched={dispatched} /> : null}
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">

@@ -97,6 +97,18 @@ export async function dispatchPackageAction(packageId: string): Promise<ActionRe
   return { ok: true };
 }
 
+export async function voidPackageAction(packageId: string): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("void_package", { p_package_id: packageId });
+  if (error) return { ok: false, error: clean(error.message) };
+  revalidatePath("/consignor/shipments");
+  revalidatePath("/store/deliveries");
+  revalidatePath("/store/returns");
+  revalidatePath("/consignor/inventory");
+  revalidatePath("/store/inventory");
+  return { ok: true };
+}
+
 export async function dispatchReturnPackageAction(packageId: string): Promise<ActionResult> {
   const supabase = createClient();
   const { error } = await supabase.rpc("dispatch_return_package", { p_package_id: packageId });
