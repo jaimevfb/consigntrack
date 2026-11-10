@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ScanLine, Camera, Truck, Undo2, ShoppingCart, Check, X, Trash2, CameraOff } from "lucide-react";
+import { ScanLine, Camera, Undo2, ShoppingCart, Check, X, Trash2, CameraOff } from "lucide-react";
 import { resolveScan, type ScanResult } from "@/app/_actions/scan";
 import { dispatchPackageAction, receiveReturnPackage, posSale, type SaleLine } from "@/app/_actions/ledger-ops";
 import { PackageManifestModal } from "@/components/package-manifest-modal";
@@ -47,8 +47,22 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
       setTimeout(() => { setResult((cur) => (cur === r ? null : cur)); lock.current = false; }, 2200);
       return;
     }
-    setResult(r); // dispatch / return / receive — stays until the user resolves
-  }, []);
+    if (r.kind === "dispatch") {
+      // The scan IS the dispatch — no confirm button. Flip it immediately.
+      const res = await dispatchPackageAction(r.id);
+      if (!res.ok) {
+        const er: ScanResult = { kind: "error", message: res.error };
+        setResult(er);
+        setTimeout(() => { setResult((cur) => (cur === er ? null : cur)); lock.current = false; }, 2500);
+      } else {
+        setFlash(`Dispatched ${r.pkg_code} → ${r.store_name}`);
+        router.refresh();
+        setTimeout(() => { setFlash(null); lock.current = false; }, 1400);
+      }
+      return;
+    }
+    setResult(r); // return / receive — stays until the user resolves
+  }, [router]);
 
   const startCamera = React.useCallback(async () => {
     try {
@@ -88,11 +102,6 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
 
   function closeResult() { setResult(null); lock.current = false; }
 
-  async function confirmDispatch(id: string) {
-    setBusy(true); const res = await dispatchPackageAction(id); setBusy(false);
-    if (!res.ok) { setResult({ kind: "error", message: res.error }); return; }
-    setFlash("Dispatched"); router.refresh(); closeResult();
-  }
   const cartTotal = cart.reduce((a, l) => a + l.qty * l.unit_price, 0);
   async function recordSale() {
     if (cart.length === 0 || !storeId) return;
@@ -165,16 +174,6 @@ export function ScanHub({ initialCode, storeId }: { initialCode?: string; storeI
       {/* Action results */}
       {result?.kind === "error" ? (
         <Card><CardContent className="flex items-center gap-2 py-4 text-sm text-destructive"><X className="h-4 w-4" /> {result.message}</CardContent></Card>
-      ) : null}
-
-      {result?.kind === "dispatch" ? (
-        <Card><CardContent className="pt-5">
-          <div className="flex items-center gap-2 text-sm"><Truck className="h-4 w-4 text-primary" /> Dispatch <strong>{result.pkg_code}</strong> → {result.store_name} ({result.units} units)?</div>
-          <div className="mt-3 flex gap-2">
-            <Button className="flex-1" disabled={busy} onClick={() => confirmDispatch(result.id)}>{busy ? "Dispatching…" : "Confirm dispatch"}</Button>
-            <Button variant="ghost" onClick={closeResult}>Cancel</Button>
-          </div>
-        </CardContent></Card>
       ) : null}
 
       {result?.kind === "return" ? (
