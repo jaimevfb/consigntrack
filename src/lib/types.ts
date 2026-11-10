@@ -57,6 +57,14 @@ export interface Product {
   sku: string | null;
   unit_price: number;
   unit_of_measure: string;
+  category: string;
+  variant: string | null;
+  description: string | null;
+  cost: number | null;
+  photo_url: string | null;
+  perishable: boolean;
+  shelf_life_days: number | null;
+  status: string;
   created_at: string;
   updated_at: string;
 }
