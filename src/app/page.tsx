@@ -19,47 +19,7 @@ const WALK = [
   { icon: Coins, title: "Settle & pay out", body: "Each period, commission and payouts compute automatically into an auditable statement." },
 ];
 
-function StepVisual({ i }: { i: number }) {
-  if (i === 0) return (
-    <div className="flex items-center gap-2">
-      <span className="flex -space-x-2">
-        <span className="h-6 w-6 rounded-full bg-[#2743C9] ring-2 ring-white" />
-        <span className="h-6 w-6 rounded-full bg-[#60A5FA] ring-2 ring-white" />
-      </span>
-      <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-[#475569] ring-1 ring-[#E2E8F0]">85 / 15</span>
-      <span className="ct-ping ml-auto h-2 w-2 rounded-full bg-[#10B981]" />
-    </div>
-  );
-  if (i === 1) return (
-    <div className="flex items-center justify-center">
-      <div className="relative h-10 w-10 overflow-hidden rounded bg-white ring-1 ring-[#E2E8F0]">
-        <div className="grid h-full w-full grid-cols-4 grid-rows-4 gap-[1.5px] p-[3px]">
-          {Array.from({ length: 16 }).map((_, k) => (
-            <span key={k} className={`rounded-[1px] ${[0, 1, 4, 2, 3, 7, 8, 11, 12, 15, 10, 13].includes(k) ? "bg-[#2743C9]" : "bg-transparent"}`} />
-          ))}
-        </div>
-        <div className="ct-scan absolute inset-x-0 top-0 h-[2px] bg-[#4F46E5] shadow-[0_0_6px_1px_rgba(79,70,229,0.6)]" />
-      </div>
-    </div>
-  );
-  if (i === 2) return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[10px] text-[#475569]"><span>Sale recorded</span><span className="tnum font-semibold">₱1,800</span></div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-[#E2E8F0]"><div className="ct-fillhold h-full rounded-full bg-gradient-to-r from-[#2743C9] to-[#4F46E5]" /></div>
-    </div>
-  );
-  return (
-    <div className="flex items-center justify-center gap-2">
-      <span className="relative flex h-8 w-8 items-center justify-center">
-        <span className="ct-ping absolute h-8 w-8 rounded-full bg-[#10B981]/40" />
-        <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-[#10B981] text-white"><CheckCircle2 className="h-4 w-4" /></span>
-      </span>
-      <span className="text-[10px] font-medium text-[#059669]">Paid out</span>
-    </div>
-  );
-}
-
-// delays align each stage glow to when the linear fill (0→100% over 0–82% of a 7s loop) reaches it
+// stages light as the dot (linear fill over 0–82% of a 7s loop) reaches each one
 const STAGES = [
   { icon: Boxes, label: "Warehouse", delay: 0 },
   { icon: Truck, label: "In transit", delay: 1.44 },
@@ -186,8 +146,7 @@ function Landing() {
                   <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EEF2FF] text-[#2743C9]"><I className="h-5 w-5" /></span>
                 </div>
                 <h3 className="relative mt-4 text-sm font-semibold">{w.title}</h3>
-                <p className="relative mt-1 flex-1 text-xs leading-5 text-[#64748B]">{w.body}</p>
-                <div className="relative mt-4 flex min-h-[3.25rem] items-center rounded-xl border border-[#EEF0F6] bg-[#F8FAFF] p-2.5"><div className="w-full"><StepVisual i={i} /></div></div>
+                <p className="relative mt-1 text-xs leading-5 text-[#64748B]">{w.body}</p>
               </div>
             );
           })}
