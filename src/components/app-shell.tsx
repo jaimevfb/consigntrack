@@ -78,8 +78,8 @@ function NavList({ nav, onNavigate }: { nav: NavItem[]; onNavigate?: () => void 
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
               active
-                ? "bg-primary/10 font-medium text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                ? "bg-white/15 font-medium text-white shadow-sm ring-1 ring-inset ring-white/10"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
             )}
           >
             <Icon className="h-[18px] w-[18px]" />
@@ -105,9 +105,9 @@ function ProfileMenu({ userName, roleLabel, initials }: { userName: string; role
   const isDark = mounted && resolvedTheme === "dark";
 
   return (
-    <div ref={ref} className="relative border-t border-border p-3">
+    <div ref={ref} className="relative border-t border-white/10 p-3">
       {open ? (
-        <div className="absolute bottom-full left-3 right-3 mb-2 overflow-hidden rounded-xl border border-border bg-card shadow-pop">
+        <div className="absolute bottom-full left-3 right-3 mb-2 overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-pop">
           <button onClick={() => setTheme(isDark ? "light" : "dark")} className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-muted">
             {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />} {isDark ? "Light mode" : "Dark mode"}
           </button>
@@ -118,13 +118,13 @@ function ProfileMenu({ userName, roleLabel, initials }: { userName: string; role
           </form>
         </div>
       ) : null}
-      <button onClick={() => setOpen((v) => !v)} aria-haspopup="menu" aria-expanded={open} className="flex w-full items-center gap-3 rounded-lg p-1 text-left transition-colors hover:bg-muted">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">{initials || "U"}</span>
-        <div className="min-w-0 flex-1 text-xs text-muted-foreground">
-          <div className="truncate font-medium text-foreground">{userName}</div>
+      <button onClick={() => setOpen((v) => !v)} aria-haspopup="menu" aria-expanded={open} className="flex w-full items-center gap-3 rounded-lg p-1 text-left transition-colors hover:bg-white/10">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs font-semibold text-white">{initials || "U"}</span>
+        <div className="min-w-0 flex-1 text-xs text-white/60">
+          <div className="truncate font-medium text-white">{userName}</div>
           <div>{roleLabel}</div>
         </div>
-        <Settings className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <Settings className="h-4 w-4 shrink-0 text-white/60" />
       </button>
     </div>
   );
@@ -162,14 +162,14 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-[var(--canvas)]">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-card lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-gradient-to-b from-[#273AA6] to-[#1A2566] text-white lg:flex">
         <div className="flex h-16 items-center px-5">
           <Link href="/" aria-label="ConsignTrack home">
-            <Wordmark />
+            <Wordmark inverted className="text-white [&_span]:text-white" />
           </Link>
         </div>
         <div className="flex-1 overflow-y-auto p-3">
-          <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/45">
             Workspace
           </p>
           <NavList nav={nav} />
@@ -181,21 +181,21 @@ export function AppShell({
       {open ? (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-foreground/30" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-64 flex-col border-r border-border bg-card">
-            <div className="flex h-16 items-center justify-between border-b border-border px-5">
-              <Wordmark />
-              <Button variant="ghost" size="icon" aria-label="Close menu" onClick={() => setOpen(false)}>
+          <aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-gradient-to-b from-[#273AA6] to-[#1A2566] text-white">
+            <div className="flex h-16 items-center justify-between border-b border-white/10 px-5">
+              <Wordmark inverted className="text-white [&_span]:text-white" />
+              <Button variant="ghost" size="icon" aria-label="Close menu" className="text-white hover:bg-white/10 hover:text-white" onClick={() => setOpen(false)}>
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <div className="border-b border-border px-5 py-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <div className="border-b border-white/10 px-5 py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/45">
                 {roleLabel} workspace
               </p>
-              <p className="mt-1 truncate text-sm font-medium">{scopeLabel}</p>
+              <p className="mt-1 truncate text-sm font-medium text-white">{scopeLabel}</p>
             </div>
             <div className="flex-1 overflow-y-auto p-3">
-              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/45">
                 Workspace
               </p>
               <NavList nav={nav} onNavigate={() => setOpen(false)} />

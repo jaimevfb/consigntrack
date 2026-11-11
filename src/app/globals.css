@@ -46,7 +46,7 @@
   --input: oklch(0.91 0.006 256);
   --ring: oklch(0.55 0.215 264);
 
-  --canvas: oklch(0.966 0.006 256);
+  --canvas: oklch(0.948 0.025 264);
 
   --radius: 1rem;
 
@@ -82,7 +82,7 @@
   --border: oklch(0.928 0.005 256);
   --input: oklch(0.91 0.006 256);
   --ring: oklch(0.55 0.215 264);
-  --canvas: oklch(0.966 0.006 256);
+  --canvas: oklch(0.948 0.025 264);
 }
 
 .dark {
