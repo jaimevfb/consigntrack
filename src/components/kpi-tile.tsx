@@ -34,10 +34,10 @@ export function KpiTile({
   const up = (delta ?? 0) >= 0;
   const inner = (
     <>
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-medium text-muted-foreground">{label}</div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 truncate text-sm font-medium text-muted-foreground">{label}</div>
         {Icon ? (
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-accent-foreground">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
             <Icon className="h-[18px] w-[18px]" />
           </span>
         ) : null}
@@ -45,7 +45,7 @@ export function KpiTile({
       <div className="mt-3 flex items-center gap-2">
         <div
           className={cn(
-            "tnum text-[28px] font-bold leading-none tracking-tight",
+            "tnum min-w-0 truncate text-xl font-bold leading-none tracking-tight sm:text-2xl lg:text-[28px]",
             tone === "warn" && "text-warn-foreground",
             tone === "ok" && "text-ok-foreground",
           )}
@@ -73,10 +73,10 @@ export function KpiTile({
 
   if (href) {
     return (
-      <Link href={href} className="group block rounded-2xl border border-border bg-card p-5 shadow-card transition-colors hover:border-primary/40 hover:bg-muted/30">
+      <Link href={href} className="group block rounded-2xl border border-border bg-card p-4 shadow-card transition-colors hover:border-primary/40 hover:bg-muted/30 sm:p-5">
         {inner}
       </Link>
     );
   }
-  return <div className="rounded-2xl border border-border bg-card p-5 shadow-card">{inner}</div>;
+  return <div className="rounded-2xl border border-border bg-card p-4 shadow-card sm:p-5">{inner}</div>;
 }
