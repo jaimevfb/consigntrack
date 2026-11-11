@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowRight, ScanLine, Receipt, Boxes, Truck, Store, ShoppingBag, CheckCircle2, Users, QrCode, Coins } from "lucide-react";
 import { getSessionProfile, homeForRole } from "@/lib/auth";
 import { Wordmark } from "@/components/brand";
+import { LiveValue } from "@/components/live-value";
 
 export const metadata = { title: "ConsignTrack" };
 
@@ -72,7 +73,7 @@ function Landing() {
             <div className="mt-3 flex items-end justify-between">
               <div>
                 <div className="text-xs text-[#94A3B8]">Network value</div>
-                <div className="tnum text-3xl font-bold sm:text-4xl">₱942,090<span className="text-[#94A3B8]">.00</span></div>
+                <div className="tnum text-3xl font-bold sm:text-4xl"><LiveValue target={942090} /></div>
               </div>
               <div className="tnum text-xs font-medium text-[#059669]">+₱48,020 sold this month</div>
             </div>
