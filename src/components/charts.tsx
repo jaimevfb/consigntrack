@@ -327,9 +327,9 @@ export function RankedBars({
     <div className="space-y-2.5">
       {rows.map((r, i) => (
         <div key={i} className="min-w-0">
-          <div className="mb-1 flex items-baseline justify-between gap-2">
-            <span className="min-w-0 truncate text-sm font-medium">{r.label}</span>
-            <span className="shrink-0 whitespace-nowrap text-sm">
+          <div className="mb-1 grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-2">
+            <span className="truncate text-sm font-medium">{r.label}</span>
+            <span className="whitespace-nowrap text-right text-sm">
               <span className="tnum font-medium">{valueFormat(r.value)}</span>
               {r.sub ? <span className="tnum ml-1.5 text-xs text-muted-foreground">{r.sub}</span> : null}
             </span>
