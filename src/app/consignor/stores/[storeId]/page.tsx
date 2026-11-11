@@ -50,7 +50,7 @@ export default async function ConsignorStoreMonitorPage({ params }: { params: { 
         <CardContent><LineChart points={d.netSeries} height={180} valueLabel={formatPHP} /></CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Top sellers here</CardTitle></CardHeader>
           <CardContent>

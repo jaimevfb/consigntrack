@@ -19,7 +19,7 @@ export default async function ConsignorInsightsPage() {
         <p className="text-sm text-muted-foreground">What&rsquo;s selling where — to decide what to make more of and ship next. Gross last 30 days: {formatPHP(gross30)}.</p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-base">Daily gross sales</CardTitle></CardHeader>
           <CardContent><DailyBars points={series} height={200} valueLabel={formatPHP} /></CardContent>

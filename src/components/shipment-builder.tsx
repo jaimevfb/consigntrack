@@ -53,7 +53,7 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-3">
           <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><PackagePlus className="h-4 w-4 text-primary" /> Shipment builder</CardTitle></CardHeader>
           <CardContent className="space-y-4">

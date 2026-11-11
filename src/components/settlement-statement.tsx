@@ -126,7 +126,7 @@ export function SettlementStatementButton({ statement: s, label = "Statement" }:
               </div>
 
               {/* Totals + payment side by side on wide screens */}
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="rounded-xl border border-border p-4 text-sm">
                   <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Summary</div>
                   <div className="space-y-1.5">

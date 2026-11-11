@@ -46,7 +46,7 @@ export default async function StoreDashboardPage() {
         <KpiTile icon={FileClock} label="Settlements due" hint="Net payable pending" value={formatPHP(dash.settlementsDueAmount)} tone={dash.settlementsDueAmount > 0 ? "warn" : "default"} href="/store/settlements" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="overflow-hidden lg:col-span-2">
           <CardHeader className="pb-2">
             <div className="flex flex-wrap items-end justify-between gap-2">

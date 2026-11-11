@@ -61,7 +61,7 @@ export default async function ConsignorDashboardPage() {
       </Card>
 
       {/* Top products + payout forecast */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Top products across stores</CardTitle></CardHeader>
           <CardContent>
@@ -93,7 +93,7 @@ export default async function ConsignorDashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-base">Live shipment feed</CardTitle></CardHeader>
           <CardContent>

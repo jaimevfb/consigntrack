@@ -62,7 +62,7 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-5">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
       <div className="lg:col-span-3">
         <Card>
           <CardHeader className="pb-3">
