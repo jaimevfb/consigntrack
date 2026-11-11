@@ -152,7 +152,7 @@ function Landing() {
             {/* single synced progress: the fill and the leading dot are one element, so they can never desync */}
             <div aria-hidden className="absolute left-[10%] right-[10%] top-[22px] -translate-y-1/2 sm:top-7">
               <div className="ct-progress relative h-0.5 rounded-full bg-gradient-to-r from-[#2743C9] to-[#4F46E5]">
-                <span className="absolute right-0 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#4F46E5] shadow-[0_0_16px_5px_rgba(79,70,229,0.55)]" />
+                <span className="absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 translate-x-1/2 rounded-full bg-[#4F46E5] ring-2 ring-white shadow-[0_0_12px_3px_rgba(79,70,229,0.45)]" />
               </div>
             </div>
             {/* stages */}
