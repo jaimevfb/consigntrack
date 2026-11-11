@@ -55,6 +55,7 @@ export function AccountsManager({
           </p>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -92,6 +93,7 @@ export function AccountsManager({
               ) : null}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

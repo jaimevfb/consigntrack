@@ -68,7 +68,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
             <p className="text-xs text-muted-foreground">A unique SKU is issued automatically. Use <strong>Save &amp; add another</strong> to enter colorways fast.</p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={(e) => add(e, false)} className="grid gap-4 sm:grid-cols-6">
+            <form onSubmit={(e) => add(e, false)} className="grid grid-cols-1 gap-4 sm:grid-cols-6">
               <Field className="sm:col-span-3" label="Name"><Input value={draft.name} onChange={(e) => set("name", e.target.value)} required /></Field>
               <Field className="sm:col-span-2" label="Category">
                 <Select value={draft.category} onValueChange={(v) => set("category", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>

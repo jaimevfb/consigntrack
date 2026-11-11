@@ -107,7 +107,7 @@ function Landing() {
 
       {/* Features */}
       <section id="features" className="mx-auto max-w-6xl px-6 pb-24">
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {[
             [Boxes, "One shared ledger", "Consignors and stores read the same stock, sales, and balances — no more reconciling spreadsheets."],
             [ScanLine, "Scan to track custody", "A unique QR per package moves stock through dispatch, receiving, and returns — only on a real scan."],

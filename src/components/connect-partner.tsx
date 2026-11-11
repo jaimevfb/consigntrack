@@ -84,7 +84,7 @@ export function ConnectPartner({
             <p className="text-xs text-muted-foreground">Create an active agreement to begin transacting with this partner.</p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={submit} className="grid gap-4 sm:grid-cols-3">
+            <form onSubmit={submit} className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-1.5 sm:col-span-1">
                 <Label className="capitalize">{partnerNoun}</Label>
                 <Select value={partnerId} onValueChange={setPartnerId}>
@@ -162,6 +162,7 @@ export function ConnectPartner({
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -191,6 +192,7 @@ export function ConnectPartner({
               ) : null}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

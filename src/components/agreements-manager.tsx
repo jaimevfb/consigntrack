@@ -60,7 +60,7 @@ const DEFAULT_TERMS: Terms = {
 
 function TermsFields({ t, set, idPrefix }: { t: Terms; set: (patch: Partial<Terms>) => void; idPrefix: string }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <div className="space-y-1.5">
         <Label htmlFor={`${idPrefix}-pct`}>Commission %</Label>
         <Input id={`${idPrefix}-pct`} type="number" value={t.pct} onChange={(e) => set({ pct: e.target.value })} />
@@ -172,7 +172,7 @@ export function AgreementsManager({
           <CardHeader><CardTitle className="text-base">New agreement</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={create} className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label>Consignor</Label>
                   <Select value={cid} onValueChange={setCid}>
@@ -203,6 +203,7 @@ export function AgreementsManager({
 
       <Card>
         <CardContent className="pt-5">
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -245,6 +246,7 @@ export function AgreementsManager({
               ) : null}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

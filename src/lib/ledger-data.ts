@@ -160,19 +160,21 @@ export async function getStoreSalesAnalytics(storeId: string): Promise<StoreSale
   const supabase = createClient();
   const since = new Date();
   since.setDate(since.getDate() - 30);
-  const { data } = await supabase
-    .from("ledger_entries")
-    .select("sku_id, qty, unit_price, created_at, products(sku, name, consignor_id)")
-    .eq("consignee_id", storeId).eq("entry_type", "SALE")
-    .gte("created_at", since.toISOString());
+  // Sales rows and commission rates are independent — fetch in parallel (no waterfall).
+  const [{ data }, { data: agr }] = await Promise.all([
+    supabase
+      .from("ledger_entries")
+      .select("sku_id, qty, unit_price, created_at, products(sku, name, consignor_id)")
+      .eq("consignee_id", storeId).eq("entry_type", "SALE")
+      .gte("created_at", since.toISOString()),
+    supabase.from("agreements").select("consignor_id, commission_pct").eq("store_id", storeId).eq("is_active", true),
+  ]);
 
   const rows = ((data ?? []) as unknown as Array<{
     sku_id: string; qty: number; unit_price: number | null; created_at: string;
     products: { sku: string; name: string; consignor_id: string } | null;
   }>);
 
-  // commission rates per consignor
-  const { data: agr } = await supabase.from("agreements").select("consignor_id, commission_pct").eq("store_id", storeId).eq("is_active", true);
   const commRate = new Map(((agr ?? []) as { consignor_id: string; commission_pct: number }[]).map((a) => [a.consignor_id, a.commission_pct]));
 
   let gross30 = 0, units30 = 0, commission30 = 0;
