@@ -65,7 +65,6 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
       {/* Step 1 — destination store (deliberate choice, no default) */}
       <Card>
         <CardContent className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">1</span>
           <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold">Destination store</div>
             <div className="text-xs text-muted-foreground">Choose where this shipment is headed before adding products.</div>
@@ -115,7 +114,7 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
                       ) : (
                         <div className="flex shrink-0 items-center gap-1">
                           <button type="button" aria-label="Decrease" disabled={v <= 0} onClick={() => setLine(s, v - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"><Minus className="h-4 w-4" /></button>
-                          <Input type="number" min={0} max={s.available} value={v} onChange={(e) => setLine(s, Number(e.target.value))} className="h-8 w-14 px-1 text-center tnum" />
+                          <Input type="number" min={0} max={s.available} value={v} onChange={(e) => setLine(s, Number(e.target.value))} className="h-8 w-14 px-1 text-center tnum [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                           <button type="button" aria-label="Increase" disabled={v >= s.available} onClick={() => setLine(s, v + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-primary transition-colors hover:bg-primary/10 disabled:opacity-40"><Plus className="h-4 w-4" /></button>
                         </div>
                       )}
@@ -129,7 +128,7 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2 lg:sticky lg:top-20 lg:self-start">
+        <Card className="flex flex-col lg:col-span-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Manifest</CardTitle>
             {storeName ? (
@@ -138,14 +137,14 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
               <p className="text-xs text-muted-foreground">No destination selected yet.</p>
             )}
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-1 flex-col">
             {lines.length === 0 ? (
-              <div className="flex flex-col items-center gap-1.5 py-10 text-center">
+              <div className="flex flex-1 flex-col items-center justify-center gap-1.5 py-10 text-center">
                 <PackagePlus className="h-6 w-6 text-muted-foreground/60" />
                 <p className="text-sm text-muted-foreground">{storeId ? "Add quantities to build the package." : "Pick a store, then add products."}</p>
               </div>
             ) : (
-              <div className="space-y-2.5">
+              <div className="flex-1 space-y-2.5 overflow-y-auto">
                 {lines.map((s) => (
                   <div key={s.sku_id} className="flex items-center justify-between gap-2 text-sm">
                     <div className="min-w-0 flex-1">
@@ -156,12 +155,14 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
                     <button aria-label="Remove" onClick={() => setLine(s, 0)} className="shrink-0 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
                   </div>
                 ))}
-                <div className="mt-1 flex items-center justify-between border-t border-border pt-2.5 text-sm">
-                  <span className="text-muted-foreground">{totalUnits} units</span>
-                  <span className="tnum text-base font-bold">{formatPHP(totalValue)}</span>
-                </div>
               </div>
             )}
+            {lines.length > 0 ? (
+              <div className="mt-3 flex items-center justify-between border-t border-border pt-2.5 text-sm">
+                <span className="text-muted-foreground">{totalUnits} units</span>
+                <span className="tnum text-base font-bold">{formatPHP(totalValue)}</span>
+              </div>
+            ) : null}
             <Button className="mt-4 w-full" disabled={busy || !storeId || lines.length === 0} onClick={generate}><Plus className="h-4 w-4" /> {busy ? "Generating…" : "Generate package QR"}</Button>
             {!storeId && lines.length > 0 ? <p className="mt-2 text-center text-xs text-muted-foreground">Select a destination store to continue.</p> : null}
           </CardContent>
