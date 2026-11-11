@@ -34,7 +34,7 @@ function Landing() {
         <div aria-hidden className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)", backgroundSize: "26px 26px" }} />
         <div className="relative mx-auto max-w-4xl px-6 pb-20 pt-40 text-center">
           <h1 className="font-serif text-4xl font-semibold leading-[1.08] text-white sm:text-5xl md:text-6xl">
-            One source of truth for consignors<br className="hidden sm:block" /> and the stores that sell for them.
+            The centralized platform for<br className="hidden sm:block" />consignors and retail partners<br className="hidden sm:block" />to track inventory and settlements.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-lg text-white/75">
             Track every unit, sale, return, and payout across your partner stores — from one shared, auditable ledger.
