@@ -35,7 +35,7 @@ export function KpiTile({
   const inner = (
     <>
       <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0 truncate text-sm font-medium text-muted-foreground">{label}</div>
+        <div className="min-w-0 text-sm font-medium leading-snug text-muted-foreground">{label}</div>
         {Icon ? (
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
             <Icon className="h-[18px] w-[18px]" />

@@ -326,17 +326,17 @@ export function RankedBars({
   return (
     <div className="space-y-2.5">
       {rows.map((r, i) => (
-        <div key={i} className="grid grid-cols-[1fr_auto] items-center gap-3">
-          <div className="min-w-0">
-            <div className="mb-1 flex items-baseline justify-between gap-2">
-              <span className="truncate text-sm font-medium">{r.label}</span>
-              <span className="tnum shrink-0 text-sm">{valueFormat(r.value)}</span>
-            </div>
-            <div className="h-2 w-full overflow-hidden rounded-sm bg-muted">
-              <div className="h-full rounded-sm bg-primary" style={{ width: `${Math.min(100, (r.value / top) * 100)}%` }} />
-            </div>
+        <div key={i} className="min-w-0">
+          <div className="mb-1 flex items-baseline justify-between gap-2">
+            <span className="min-w-0 truncate text-sm font-medium">{r.label}</span>
+            <span className="shrink-0 whitespace-nowrap text-sm">
+              <span className="tnum font-medium">{valueFormat(r.value)}</span>
+              {r.sub ? <span className="tnum ml-1.5 text-xs text-muted-foreground">{r.sub}</span> : null}
+            </span>
           </div>
-          {r.sub ? <span className="tnum text-xs text-muted-foreground">{r.sub}</span> : <span />}
+          <div className="h-2 w-full overflow-hidden rounded-sm bg-muted">
+            <div className="h-full rounded-sm bg-primary" style={{ width: `${Math.min(100, (r.value / top) * 100)}%` }} />
+          </div>
         </div>
       ))}
       {rows.length === 0 ? <p className="text-sm text-muted-foreground">No data yet.</p> : null}
