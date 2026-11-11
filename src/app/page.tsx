@@ -4,7 +4,7 @@ import { ArrowRight, ScanLine, Receipt, Boxes, Truck, Store, ShoppingBag, CheckC
 import { getSessionProfile, homeForRole } from "@/lib/auth";
 import { Wordmark } from "@/components/brand";
 
-export const metadata = { title: "ConsignTrack — consignment that reconciles itself" };
+export const metadata = { title: "ConsignTrack" };
 
 export default async function RootPage() {
   const session = await getSessionProfile();
