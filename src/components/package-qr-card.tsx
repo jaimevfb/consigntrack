@@ -26,7 +26,7 @@ export function PackageQrCard({ code, token, from, to, units }: { code: string; 
         <QRCodeSVG id={`pkgqr-lg-${code}`} value={payload} size={180} level="M" marginSize={1} />
       </div>
       <div className="tnum text-xl font-bold tracking-wide">{code}</div>
-      <div className="tnum text-sm tracking-[0.2em] text-muted-foreground">{token}</div>
+      <div className="tnum break-all text-sm tracking-[0.2em] text-muted-foreground">{token}</div>
       <p className="text-center text-xs text-muted-foreground">Scan this QR in the app to action the package. Camera down? Type the code above.</p>
       <div className="flex flex-wrap justify-center gap-2">
         <Button variant="outline" size="sm" onClick={print}><Printer className="h-4 w-4" /> Download label</Button>

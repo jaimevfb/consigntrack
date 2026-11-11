@@ -80,13 +80,13 @@ export function ReturnBuilder({ storeId, consignors, existing }: { storeId: stri
           {existing.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No returns yet.</p> : (
             <div className="space-y-3">
               {existing.map((p) => (
-                <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
-                  <div className="flex items-center gap-3">
-                    <span className="rounded-lg border border-border bg-white p-1.5"><QRCodeSVG id={`qr-${p.pkg_code}`} value={`CT1:${p.qr_token}`} size={44} level="M" marginSize={0} /></span>
-                    <div>
+                <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="shrink-0 rounded-lg border border-border bg-white p-1.5"><QRCodeSVG id={`qr-${p.pkg_code}`} value={`CT1:${p.qr_token}`} size={44} level="M" marginSize={0} /></span>
+                    <div className="min-w-0">
                       <div className="tnum text-sm font-semibold">{p.pkg_code}</div>
                       <div className="text-xs text-muted-foreground">{p.consignor_name} · {p.units} units · {formatDate(p.updated_at)}</div>
-                      <div className="tnum text-[11px] tracking-[0.18em] text-muted-foreground">{p.qr_token}</div>
+                      <div className="tnum truncate text-[11px] tracking-[0.18em] text-muted-foreground">{p.qr_token}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
