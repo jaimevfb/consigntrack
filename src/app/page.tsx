@@ -157,11 +157,11 @@ function Landing() {
             </div>
             {/* stages */}
             <div className="relative flex items-start">
-              {STAGES.map((s) => {
+              {STAGES.map((s, i) => {
                 const I = s.icon;
                 return (
                   <div key={s.label} className="flex flex-1 flex-col items-center gap-2">
-                    <span className="ct-stage relative z-10 flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#E2E8F0] bg-white text-[#94A3B8] sm:h-14 sm:w-14" style={{ animationDelay: `${s.delay}s` }}><I className="h-5 w-5 sm:h-6 sm:w-6" /></span>
+                    <span className={`ct-s${i} relative z-10 flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#E2E8F0] bg-white text-[#94A3B8] sm:h-14 sm:w-14`}><I className="h-5 w-5 sm:h-6 sm:w-6" /></span>
                     <span className="text-[11px] font-medium leading-tight text-[#475569] sm:text-xs">{s.label}</span>
                   </div>
                 );

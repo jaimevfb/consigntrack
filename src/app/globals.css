@@ -174,10 +174,36 @@
 }
 /* Stage lights briefly at the very start of its (delayed) cycle — delays are set
    inline to match when the fill reaches each node. */
-@keyframes ct-stageglow {
-  0%  { transform: scale(1.12); box-shadow: 0 0 0 7px rgba(39,67,201,.12); border-color: #2743C9; color: #2743C9; }
-  14% { transform: scale(1); box-shadow: 0 0 0 0 rgba(39,67,201,0); border-color: #E2E8F0; color: #94A3B8; }
-  100%{ transform: scale(1); box-shadow: 0 0 0 0 rgba(39,67,201,0); border-color: #E2E8F0; color: #94A3B8; }
+/* Each stage lights as the dot reaches it (0/20/41/62/82% of the loop) and STAYS
+   lit until the cycle resets (~94%), when all stages return to gray together. */
+@keyframes ct-s0 {
+  0% { border-color:#2743C9; color:#2743C9; background-color:#EEF2FF; transform:scale(1.12); box-shadow:0 0 0 7px rgba(39,67,201,.12); }
+  4%, 90% { border-color:#2743C9; color:#2743C9; background-color:#EEF2FF; transform:scale(1); box-shadow:0 0 0 0 rgba(39,67,201,0); }
+  94%, 100% { border-color:#E2E8F0; color:#94A3B8; background-color:#fff; transform:scale(1); box-shadow:0 0 0 0 rgba(39,67,201,0); }
+}
+@keyframes ct-s1 {
+  0%, 19% { border-color:#E2E8F0; color:#94A3B8; background-color:#fff; transform:scale(1); box-shadow:0 0 0 0 rgba(39,67,201,0); }
+  20% { border-color:#2743C9; color:#2743C9; background-color:#EEF2FF; transform:scale(1.12); box-shadow:0 0 0 7px rgba(39,67,201,.12); }
+  24%, 90% { border-color:#2743C9; color:#2743C9; background-color:#EEF2FF; transform:scale(1); box-shadow:0 0 0 0 rgba(39,67,201,0); }
+  94%, 100% { border-color:#E2E8F0; color:#94A3B8; background-color:#fff; }
+}
+@keyframes ct-s2 {
+  0%, 40% { border-color:#E2E8F0; color:#94A3B8; background-color:#fff; transform:scale(1); box-shadow:0 0 0 0 rgba(39,67,201,0); }
+  41% { border-color:#2743C9; color:#2743C9; background-color:#EEF2FF; transform:scale(1.12); box-shadow:0 0 0 7px rgba(39,67,201,.12); }
+  45%, 90% { border-color:#2743C9; color:#2743C9; background-color:#EEF2FF; transform:scale(1); box-shadow:0 0 0 0 rgba(39,67,201,0); }
+  94%, 100% { border-color:#E2E8F0; color:#94A3B8; background-color:#fff; }
+}
+@keyframes ct-s3 {
+  0%, 61% { border-color:#E2E8F0; color:#94A3B8; background-color:#fff; transform:scale(1); box-shadow:0 0 0 0 rgba(39,67,201,0); }
+  62% { border-color:#2743C9; color:#2743C9; background-color:#EEF2FF; transform:scale(1.12); box-shadow:0 0 0 7px rgba(39,67,201,.12); }
+  66%, 90% { border-color:#2743C9; color:#2743C9; background-color:#EEF2FF; transform:scale(1); box-shadow:0 0 0 0 rgba(39,67,201,0); }
+  94%, 100% { border-color:#E2E8F0; color:#94A3B8; background-color:#fff; }
+}
+@keyframes ct-s4 {
+  0%, 81% { border-color:#E2E8F0; color:#94A3B8; background-color:#fff; transform:scale(1); box-shadow:0 0 0 0 rgba(39,67,201,0); }
+  82% { border-color:#2743C9; color:#2743C9; background-color:#EEF2FF; transform:scale(1.12); box-shadow:0 0 0 7px rgba(39,67,201,.12); }
+  86%, 90% { border-color:#2743C9; color:#2743C9; background-color:#EEF2FF; transform:scale(1); box-shadow:0 0 0 0 rgba(39,67,201,0); }
+  94%, 100% { border-color:#E2E8F0; color:#94A3B8; background-color:#fff; }
 }
 @keyframes ct-fillhold { 0% { transform: scaleX(0); } 28%, 100% { transform: scaleX(1); } }
 @keyframes ct-scan { 0%, 100% { transform: translateY(-120%); } 50% { transform: translateY(2100%); } }
@@ -190,7 +216,11 @@
 .ct-drift2 { animation: ct-drift2 24s ease-in-out infinite; }
 .ct-dot { animation: ct-pulse-dot 2s infinite; }
 .ct-progress { animation: ct-progress 7s linear infinite; }
-.ct-stage { animation: ct-stageglow 7s ease-in-out infinite; }
+.ct-s0 { animation: ct-s0 7s linear infinite; }
+.ct-s1 { animation: ct-s1 7s linear infinite; }
+.ct-s2 { animation: ct-s2 7s linear infinite; }
+.ct-s3 { animation: ct-s3 7s linear infinite; }
+.ct-s4 { animation: ct-s4 7s linear infinite; }
 .ct-fillhold { transform-origin: left; animation: ct-fillhold 4.5s ease-in-out infinite; }
 .ct-scan { animation: ct-scan 2.6s ease-in-out infinite; }
 .ct-shimmer { background-image: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.65) 50%, transparent 80%); background-size: 200% 100%; animation: ct-shimmer 3s ease-in-out infinite; }
