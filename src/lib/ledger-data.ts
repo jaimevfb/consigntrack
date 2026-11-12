@@ -22,13 +22,18 @@ export async function getStoreSales(storeId: string, limit = 25): Promise<SaleRe
   }>;
   const sales = new Map<string, SaleRecord>();
   for (const r of rows) {
-    const key = r.created_at; // lines of one sale share the transaction timestamp
+    const key = r.created_at; // lines of one checkout share the transaction timestamp
     const qty = -r.qty; // SALE qty is stored negative
     const price = r.unit_price ?? r.products?.unit_price ?? 0; // fall back to catalog price
-    const line = { name: r.products?.name ?? "—", sku: r.products?.sku ?? "—", qty, unit_price: price, total: qty * price };
-    const s = sales.get(key);
-    if (s) { s.lines.push(line); s.units += qty; s.total += line.total; s.flagged = s.flagged || !!r.price_flag; }
-    else sales.set(key, { at: r.created_at, source: r.reason, units: qty, total: line.total, flagged: !!r.price_flag, lines: [line] });
+    const sku = r.products?.sku ?? "—";
+    const name = r.products?.name ?? "—";
+    const s = sales.get(key) ?? { at: r.created_at, source: r.reason, units: 0, total: 0, flagged: false, lines: [] };
+    // merge repeated pieces of the same product into one "Name ×N" breakdown line
+    const existing = s.lines.find((l) => l.sku === sku && l.unit_price === price);
+    if (existing) { existing.qty += qty; existing.total += qty * price; }
+    else s.lines.push({ name, sku, qty, unit_price: price, total: qty * price });
+    s.units += qty; s.total += qty * price; s.flagged = s.flagged || !!r.price_flag;
+    sales.set(key, s);
   }
   return [...sales.values()].slice(0, limit);
 }

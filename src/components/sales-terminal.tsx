@@ -31,7 +31,6 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
   const [ok, setOk] = React.useState(false);
   const [camOpen, setCamOpen] = React.useState(false);
   const [toast, setToast] = React.useState<{ kind: "ok" | "warn"; text: string } | null>(null);
-  const [scanLog, setScanLog] = React.useState<{ id: number; kind: "ok" | "warn"; text: string }[]>([]);
   const [lastScan, setLastScan] = React.useState<{ kind: "ok" | "warn"; text: string } | null>(null);
   const [fails, setFails] = React.useState(0); // consecutive failed scans → reveal typed fallback after 3
 
@@ -40,7 +39,6 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
   const cartRef = React.useRef(cart); cartRef.current = cart;
   const toastTimer = React.useRef<number | undefined>(undefined);
   const flashTimer = React.useRef<number | undefined>(undefined);
-  const logId = React.useRef(0);
 
   const filtered = skus.filter((s) => `${s.name} ${s.sku}`.toLowerCase().includes(query.toLowerCase()));
   const total = cart.reduce((a, l) => a + lineTotal(l), 0);
@@ -49,7 +47,6 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
     setToast({ kind, text });
     window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 2200);
-    setScanLog((log) => [{ id: logId.current++, kind, text }, ...log].slice(0, 30));
     setFails((n) => (kind === "ok" ? 0 : n + 1)); // reset on a good read, count up on misses
     // prominent momentary indicator (the "it's been scanned" pulse)
     setLastScan({ kind, text });
@@ -215,12 +212,12 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
             <Button variant="ghost" size="icon" aria-label="Close scanner" onClick={() => setCamOpen(false)}><X className="h-5 w-5" /></Button>
           </div>
 
-          <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 overflow-y-auto p-4 lg:flex-row lg:items-start lg:p-8">
-            <div className="mx-auto w-full max-w-2xl lg:flex-1">
+          <div className="flex flex-1 items-start justify-center overflow-y-auto p-4 lg:p-8">
+            <div className="w-full max-w-xl">
               {/* prominent scan indicator / pause */}
               <div className="mb-3 min-h-[3.25rem]">
                 {lastScan ? (
-                  <div className={`flex animate-[ct-float_0s] items-center gap-2 rounded-xl px-4 py-3 text-base font-semibold ring-1 ${lastScan.kind === "ok" ? "bg-ok/40 text-ok-foreground ring-ok/40" : "bg-destructive/10 text-destructive ring-destructive/30"}`}>
+                  <div className={`flex items-center gap-2 rounded-xl px-4 py-3 text-base font-semibold ring-1 ${lastScan.kind === "ok" ? "bg-ok/40 text-ok-foreground ring-ok/40" : "bg-destructive/10 text-destructive ring-destructive/30"}`}>
                     {lastScan.kind === "ok" ? <Check className="h-5 w-5 shrink-0" /> : <X className="h-5 w-5 shrink-0" />}
                     <span className="min-w-0 truncate">{lastScan.text}</span>
                   </div>
@@ -238,22 +235,6 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
                   </div>
                 </form>
               ) : null}
-            </div>
-
-            <div className="w-full lg:w-80 lg:shrink-0">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-medium">Scanned this session</span>
-                {scanLog.length > 0 ? <button onClick={() => setScanLog([])} className="text-xs text-muted-foreground hover:text-foreground">Clear</button> : null}
-              </div>
-              <div className="space-y-1.5">
-                {scanLog.length === 0 ? (
-                  <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">Point the camera at a product barcode — valid scans appear here.</p>
-                ) : scanLog.map((l) => (
-                  <div key={l.id} className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${l.kind === "ok" ? "bg-ok/30 text-ok-foreground" : "bg-destructive/10 text-destructive"}`}>
-                    {l.kind === "ok" ? <Check className="h-4 w-4 shrink-0" /> : <X className="h-4 w-4 shrink-0" />} <span className="min-w-0">{l.text}</span>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
 

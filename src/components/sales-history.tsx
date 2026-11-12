@@ -52,7 +52,7 @@ export function SalesHistory({ sales }: { sales: SaleRecord[] }) {
                   <div className="divide-y divide-border">
                     {g.items.map((s) => {
                       const expanded = open.has(s.at);
-                      const summary = s.lines.length === 1 ? `${s.lines[0].name} ×${s.lines[0].qty}` : `${s.lines[0].name} + ${s.lines.length - 1} more`;
+                      const summary = s.lines.length === 1 ? `${s.lines[0].name} ×${s.lines[0].qty}` : `${s.lines[0].name} ×${s.lines[0].qty} + ${s.lines.length - 1} more`;
                       return (
                         <div key={s.at}>
                           <button onClick={() => toggle(s.at)} className="flex w-full items-center gap-4 rounded-lg px-2 py-3.5 text-left transition-colors hover:bg-muted/40">

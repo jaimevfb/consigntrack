@@ -66,19 +66,14 @@ export async function lookupUnit(serial: string): Promise<ActionResult & { sku_i
   return { ok: true, sku_id: d.sku_id, name: d.name, price: d.price };
 }
 
-/** Check out a cart: SKU quantity lines + individually-scanned piece serials. */
+/** Check out a cart: SKU quantity lines + individually-scanned piece serials, in
+ *  ONE transaction so every line shares a created_at and groups as one sale. */
 export async function recordSale(storeId: string, skuLines: SaleLine[], serials: string[]): Promise<ActionResult> {
   const supabase = createClient();
-  if (skuLines.length > 0) {
-    const { error } = await supabase.rpc("pos_sale", { p_consignee: storeId, p_lines: skuLines, p_source: "POS_SCAN" });
-    if (error) {
-      const msg = error.message.includes("OVERSELL") ? "Sale rejected: not enough stock on hand. " + clean(error.message) : clean(error.message);
-      return { ok: false, error: msg };
-    }
-  }
-  for (const serial of serials) {
-    const { error } = await supabase.rpc("sell_unit", { p_serial: serial });
-    if (error) return { ok: false, error: `Piece ${serial}: ${clean(error.message)}` };
+  const { error } = await supabase.rpc("checkout_sale", { p_consignee: storeId, p_lines: skuLines, p_serials: serials });
+  if (error) {
+    const msg = error.message.includes("OVERSELL") ? "Sale rejected: not enough stock on hand. " + clean(error.message) : clean(error.message);
+    return { ok: false, error: msg };
   }
   revalidatePath("/store/sales");
   revalidatePath("/store");
