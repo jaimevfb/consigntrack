@@ -45,6 +45,8 @@ export interface InventoryRow {
   commission_pct: number;
   on_hand: number;
   in_dispute: number;
+  category: string;
+  photo_url: string | null;
 }
 
 /** All on-hand/in-dispute for a store, joined to catalog + agreement commission. */
@@ -53,7 +55,7 @@ export async function getStoreInventory(storeId: string): Promise<InventoryRow[]
   const [{ data: onHand }, { data: inDispute }, { data: products }, { data: agreements }] = await Promise.all([
     supabase.from("v_on_hand").select("sku_id, qty").eq("consignee_id", storeId),
     supabase.from("v_in_dispute").select("sku_id, qty").eq("consignee_id", storeId),
-    supabase.from("products").select("id, sku, name, unit_of_measure, unit_price, consignor_id, status, consignors(name)"),
+    supabase.from("products").select("id, sku, name, unit_of_measure, unit_price, consignor_id, status, category, photo_url, consignors(name)"),
     supabase.from("agreements").select("consignor_id, commission_pct").eq("store_id", storeId).eq("is_active", true),
   ]);
 
@@ -64,7 +66,7 @@ export async function getStoreInventory(storeId: string): Promise<InventoryRow[]
   const rows: InventoryRow[] = [];
   for (const p of (products ?? []) as unknown as Array<{
     id: string; sku: string; name: string; unit_of_measure: string; unit_price: number;
-    consignor_id: string; status: string; consignors: { name: string } | null;
+    consignor_id: string; status: string; category: string | null; photo_url: string | null; consignors: { name: string } | null;
   }>) {
     const on = onHandBy.get(p.id) ?? 0;
     const disp = dispBy.get(p.id) ?? 0;
@@ -75,7 +77,7 @@ export async function getStoreInventory(storeId: string): Promise<InventoryRow[]
       sku_id: p.id, sku: p.sku, name: p.name, unit_of_measure: p.unit_of_measure,
       unit_price: p.unit_price, consignor_id: p.consignor_id,
       consignor_name: p.consignors?.name ?? "—", commission_pct: commBy.get(p.consignor_id) ?? 0,
-      on_hand: on, in_dispute: disp,
+      on_hand: on, in_dispute: disp, category: p.category ?? "Other", photo_url: p.photo_url ?? null,
     });
   }
   return rows.sort((a, b) => a.consignor_name.localeCompare(b.consignor_name) || a.name.localeCompare(b.name));

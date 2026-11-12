@@ -1,3 +1,4 @@
+import { Boxes, Coins, AlertTriangle, TrendingDown } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getStoreInventory } from "@/lib/ledger-data";
@@ -22,7 +23,7 @@ export default async function StoreInventoryPage() {
   const rows: InvRow[] = inv.map((r) => ({
     sku_id: r.sku_id, sku: r.sku, name: r.name, unit_of_measure: r.unit_of_measure, unit_price: r.unit_price,
     consignor_name: r.consignor_name, commission_pct: r.commission_pct, on_hand: r.on_hand, in_dispute: r.in_dispute,
-    sold: soldBy.get(r.sku_id) ?? 0,
+    sold: soldBy.get(r.sku_id) ?? 0, category: r.category, photo_url: r.photo_url,
   }));
 
   const sellableUnits = rows.reduce((a, r) => a + Math.max(0, r.on_hand), 0);
@@ -37,10 +38,10 @@ export default async function StoreInventoryPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Strip label="Sellable units" value={formatNumber(sellableUnits)} />
-        <Strip label="Retail value" value={formatPHP(value)} />
-        <Strip label="Disputed" value={formatNumber(disputed)} tone={disputed > 0 ? "warn" : undefined} />
-        <Strip label="Low stock" value={formatNumber(lowCount)} tone={lowCount > 0 ? "info" : undefined} />
+        <Strip label="Sellable units" value={formatNumber(sellableUnits)} icon={Boxes} />
+        <Strip label="Retail value" value={formatPHP(value)} icon={Coins} />
+        <Strip label="Disputed" value={formatNumber(disputed)} icon={AlertTriangle} tone={disputed > 0 ? "warn" : undefined} />
+        <Strip label="Low stock" value={formatNumber(lowCount)} icon={TrendingDown} tone={lowCount > 0 ? "info" : undefined} />
       </div>
 
       <InventoryTable rows={rows} />
@@ -48,11 +49,14 @@ export default async function StoreInventoryPage() {
   );
 }
 
-function Strip({ label, value, tone }: { label: string; value: string; tone?: "warn" | "info" }) {
+function Strip({ label, value, tone, icon: Icon }: { label: string; value: string; tone?: "warn" | "info"; icon: React.ComponentType<{ className?: string }> }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className={`tnum mt-1.5 text-2xl font-bold ${tone === "warn" ? "text-warn-foreground" : tone === "info" ? "text-primary" : ""}`}>{value}</div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${tone === "warn" ? "bg-warn/20 text-warn-foreground" : tone === "info" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}><Icon className="h-4 w-4" /></span>
+      </div>
+      <div className={`tnum mt-2 text-2xl font-bold ${tone === "warn" ? "text-warn-foreground" : tone === "info" ? "text-primary" : ""}`}>{value}</div>
     </div>
   );
 }
