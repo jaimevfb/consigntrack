@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StatusPill } from "@/components/status-pill";
 import { formatPHP } from "@/lib/utils";
 import { UNITS, unitShort } from "@/lib/units";
+import { ProductQrButton } from "@/components/product-qr-button";
 import type { Product } from "@/lib/types";
 
 const CATEGORIES = ["Weaves", "Apparel", "Jewelry", "Bags", "Accessories", "Home", "Ceramics", "Woodwork", "Food", "Beverages", "Beauty", "Wellness", "Stationery", "Crafts", "Art", "Toys", "Other"];
@@ -131,6 +132,7 @@ export function ProductCatalog({ products, stock = {} }: { products: Product[]; 
                           </div>
                         ) : (
                           <div className="inline-flex items-center justify-end gap-1">
+                            {p.sku ? <ProductQrButton sku={p.sku} name={p.name} /> : null}
                             <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => setEditId(p.id)}><Pencil className="h-4 w-4" /></Button>
                             <Button variant="ghost" size="icon" aria-label="Remove" onClick={() => { setError(null); setConfirmId(p.id); }}><Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" /></Button>
                           </div>

@@ -108,15 +108,12 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
             </div>
             <p className="mt-1 text-xs text-muted-foreground">{quickSell ? "Each scan is recorded as a sale instantly." : "Scans build a cart — review, then Record sale."}</p>
             <div className="mt-2 flex gap-2">
-              <form onSubmit={onScan} className="flex flex-1 gap-2">
-                <div className="relative flex-1">
-                  <ScanLine className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input value={scan} onChange={(e) => setScan(e.target.value)} placeholder="Scan or type a SKU, press Enter" className="pl-8" />
-                </div>
-                <Button type="submit" variant="outline">Add</Button>
+              <form onSubmit={onScan} className="relative flex-1">
+                <ScanLine className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input value={scan} onChange={(e) => setScan(e.target.value)} placeholder="Scan or type a SKU, press Enter" className="h-11 pl-9" />
               </form>
-              <Button type="button" variant={camOpen ? "default" : "outline"} className="gap-1.5" onClick={() => setCamOpen((v) => !v)}>
-                {camOpen ? <><X className="h-4 w-4" /> Close</> : <><Camera className="h-4 w-4" /> Scan</>}
+              <Button type="button" size="lg" variant={camOpen ? "default" : "outline"} className="h-11 gap-2 px-7 text-base" onClick={() => setCamOpen((v) => !v)}>
+                {camOpen ? <><X className="h-5 w-5" /> Close</> : <><Camera className="h-5 w-5" /> Scan</>}
               </Button>
             </div>
             {camOpen ? <div className="mt-3"><BarcodeScanner onDecode={resolveCode} /></div> : null}
@@ -151,13 +148,16 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
       </div>
 
       <div className="lg:col-span-2">
-        <Card className="sticky top-20">
+        <Card className="flex h-full flex-col">
           <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><ShoppingCart className="h-4 w-4 text-primary" /> Cart</CardTitle></CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-1 flex-col">
             {cart.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">Scan or tap a product to start a sale.</p>
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-center text-sm text-muted-foreground">
+                <ShoppingCart className="h-7 w-7 text-muted-foreground/50" />
+                Scan or tap a product to start a sale.
+              </div>
             ) : (
-              <div className="space-y-3">
+              <div className="flex-1 space-y-3 overflow-y-auto">
                 {cart.map((l) => (
                   <div key={l.sku_id} className="flex items-center gap-2">
                     <div className="min-w-0 flex-1">
@@ -169,12 +169,14 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
                     <button aria-label="Remove" onClick={() => remove(l.sku_id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
                   </div>
                 ))}
-                <div className="flex items-center justify-between border-t border-border pt-3">
-                  <span className="text-sm text-muted-foreground">Total</span>
-                  <span className="tnum text-xl font-bold">{formatPHP(total)}</span>
-                </div>
               </div>
             )}
+            {cart.length > 0 ? (
+              <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                <span className="text-sm text-muted-foreground">Total</span>
+                <span className="tnum text-xl font-bold">{formatPHP(total)}</span>
+              </div>
+            ) : null}
             {err ? <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{err}</p> : null}
             {ok ? <p className="mt-3 flex items-center gap-1.5 rounded-md bg-ok/40 px-3 py-2 text-sm text-ok-foreground"><Check className="h-4 w-4" /> Sale recorded.</p> : null}
             <Button className="mt-4 w-full" disabled={busy || cart.length === 0} onClick={record}>{busy ? "Recording…" : "Record sale"}</Button>
