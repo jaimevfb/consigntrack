@@ -57,6 +57,20 @@ const storeSchema = z.object({
   end_of_period_action: z.enum(["return", "extend", "discount"]).default("return"),
 });
 
+// ---------------------------------------------------------------------------
+// Terminate an account (admin only): revokes the sign-in and severs agreements,
+// keeping history intact.
+// ---------------------------------------------------------------------------
+export async function terminateAccount(input: { kind: "consignor" | "store"; id: string }): Promise<ActionResult> {
+  if (input.kind !== "consignor" && input.kind !== "store") return { ok: false, error: "Unknown account kind" };
+  const supabase = createClient();
+  const { error } = await supabase.rpc("admin_terminate_account", { p_kind: input.kind, p_id: input.id });
+  if (error) return { ok: false, error: clean(error.message) };
+  revalidatePath("/admin/accounts");
+  revalidatePath("/admin/agreements");
+  return { ok: true };
+}
+
 export async function issueStoreAccount(input: unknown): Promise<ActionResult> {
   const parsed = storeSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { UserPlus, Store as StoreIcon, Check } from "lucide-react";
-import { createConsignorAccount, issueStoreAccount } from "@/app/_actions/admin";
+import { createConsignorAccount, issueStoreAccount, terminateAccount } from "@/app/_actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,10 +18,12 @@ export interface ConsignorOption {
 }
 export interface AccountRow {
   kind: "consignor" | "store";
+  id: string;
   name: string;
   email: string | null;
   connectedTo: string | null;
   connections: number;
+  active: boolean;
 }
 
 function Field({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
@@ -61,9 +63,7 @@ export function AccountsManager({
         </button>
       </div>
 
-      <div className="max-w-2xl">
-        {tab === "consignor" ? <ConsignorForm /> : <StoreForm consignors={consignors} />}
-      </div>
+      {tab === "consignor" ? <ConsignorForm /> : <StoreForm consignors={consignors} />}
 
       <Card>
         <CardHeader>
@@ -81,11 +81,12 @@ export function AccountsManager({
                 <TableHead>Role</TableHead>
                 <TableHead>Sign-in email</TableHead>
                 <TableHead>Connection</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((r, i) => (
-                <TableRow key={i}>
+                <TableRow key={i} className={r.active ? undefined : "opacity-60"}>
                   <TableCell className="font-medium">{r.name}</TableCell>
                   <TableCell>
                     <StatusPill tone={r.kind === "consignor" ? "ok" : "neutral"}>
@@ -100,11 +101,14 @@ export function AccountsManager({
                         ? `→ ${r.connectedTo}`
                         : "Not connected"}
                   </TableCell>
+                  <TableCell className="text-right">
+                    {r.active ? <TerminateButton kind={r.kind} id={r.id} name={r.name} /> : <StatusPill tone="neutral">Terminated</StatusPill>}
+                  </TableCell>
                 </TableRow>
               ))}
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                     No accounts issued yet.
                   </TableCell>
                 </TableRow>
@@ -114,6 +118,37 @@ export function AccountsManager({
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function TerminateButton({ kind, id, name }: { kind: "consignor" | "store"; id: string; name: string }) {
+  const router = useRouter();
+  const [confirming, setConfirming] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  async function run() {
+    setBusy(true);
+    setError(null);
+    const res = await terminateAccount({ kind, id });
+    setBusy(false);
+    if (!res.ok) { setError(res.error); setConfirming(false); return; }
+    router.refresh();
+  }
+
+  if (!confirming) {
+    return (
+      <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setConfirming(true)}>
+        Terminate
+      </Button>
+    );
+  }
+  return (
+    <div className="inline-flex items-center justify-end gap-1.5">
+      {error ? <span className="text-xs text-destructive">{error}</span> : <span className="hidden text-xs text-muted-foreground sm:inline">Revoke {name}&rsquo;s access?</span>}
+      <Button variant="ghost" size="sm" disabled={busy} onClick={() => setConfirming(false)}>Cancel</Button>
+      <Button variant="destructive" size="sm" disabled={busy} onClick={run}>{busy ? "Terminating…" : "Confirm"}</Button>
     </div>
   );
 }
@@ -166,7 +201,7 @@ function ConsignorForm() {
             <Input id="c-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </Field>
           <Field id="c-pass" label="Temporary password">
-            <Input id="c-pass" type="text" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="min. 6 characters" />
+            <Input id="c-pass" type="text" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="min. 6 characters" autoCapitalize="none" />
           </Field>
           {error ? <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
           {ok ? (
@@ -269,7 +304,7 @@ function StoreForm({ consignors }: { consignors: ConsignorOption[] }) {
               <Input id="s-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </Field>
             <Field id="s-pass" label="Temporary password">
-              <Input id="s-pass" type="text" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="min. 6 chars" />
+              <Input id="s-pass" type="text" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="min. 6 chars" autoCapitalize="none" />
             </Field>
           </div>
           <div className="grid grid-cols-3 gap-3">

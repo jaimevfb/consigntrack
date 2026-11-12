@@ -186,7 +186,7 @@ export function ScanHub({ storeId }: { storeId?: string | null }) {
               <form onSubmit={onTyped} className="flex gap-2">
                 <div className="relative flex-1">
                   <ScanLine className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="QR token (under the label) or product SKU" className="pl-8" autoFocus />
+                  <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="QR token (under the label) or product SKU" className="pl-8" autoFocus autoCapitalize="none" />
                 </div>
                 <Button type="submit" variant="outline">Go</Button>
               </form>

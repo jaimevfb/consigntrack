@@ -74,7 +74,7 @@ export function InventoryTable({ rows }: { rows: InvRow[] }) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative sm:max-w-xs sm:flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product, SKU, consignor…" className="h-9 pl-8" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product, SKU, consignor…" className="h-9 pl-8" autoCapitalize="none" />
         </div>
         <div className="flex flex-wrap gap-1.5">
           {chips.map((c) => (
