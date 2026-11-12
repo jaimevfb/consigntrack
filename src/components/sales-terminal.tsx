@@ -138,7 +138,7 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
             </div>
           </CardHeader>
           <CardContent>
-            <div className="max-h-[52vh] divide-y divide-border overflow-y-auto">
+            <div className="max-h-[52vh] divide-y divide-border overflow-y-auto pr-2">
               {filtered.map((s) => (
                 <div key={s.sku_id} className="flex w-full items-center justify-between gap-3 py-2.5">
                   <div className="min-w-0">
@@ -165,7 +165,7 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
                 Scan a product barcode to start a sale.
               </div>
             ) : (
-              <div className="flex-1 space-y-3 overflow-y-auto">
+              <div className="flex-1 space-y-3 overflow-y-auto pr-2">
                 {cart.map((l) => l.kind === "sku" ? (
                   <div key={`sku:${l.sku_id}`} className="flex items-center gap-2">
                     <div className="min-w-0 flex-1">
