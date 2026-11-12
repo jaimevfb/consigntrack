@@ -29,11 +29,13 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
   const [camOpen, setCamOpen] = React.useState(false);
   const [quickSell, setQuickSell] = React.useState(false);
   const [toast, setToast] = React.useState<{ kind: "ok" | "warn"; text: string } | null>(null);
+  const [scanLog, setScanLog] = React.useState<{ id: number; kind: "ok" | "warn"; text: string }[]>([]);
 
   // refs so the (stable) camera callback always sees the latest state
   const skusRef = React.useRef(skus); skusRef.current = skus;
   const quickRef = React.useRef(quickSell); quickRef.current = quickSell;
   const toastTimer = React.useRef<number | undefined>(undefined);
+  const logId = React.useRef(0);
 
   const filtered = skus.filter((s) => `${s.name} ${s.sku}`.toLowerCase().includes(query.toLowerCase()));
 
@@ -41,6 +43,7 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
     setToast({ kind, text });
     window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 2200);
+    setScanLog((log) => [{ id: logId.current++, kind, text }, ...log].slice(0, 30));
   }, []);
 
   function add(s: SellableSku) {
@@ -69,17 +72,20 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
     else flash("warn", res.error);
   }, [flash, router]);
 
-  // One place every scan path (camera or typed) flows through.
+  // One place every scan path (camera or typed) flows through. Validates the
+  // barcode before acting so only real SKUs / piece serials are accepted.
   const resolveCode = React.useCallback((raw: string) => {
     const code = cleanCode(raw);
+    if (!code) return;
     const hit = skusRef.current.find((s) => s.sku.toLowerCase() === code.toLowerCase());
     if (hit) {
       // plain SKU barcode → cart (or quick-sell)
       if (quickRef.current) { void quickRecord(hit); } else { add(hit); flash("ok", `Added ${hit.name}`); }
       return;
     }
-    // otherwise treat it as a unique piece serial and sell that exact piece
-    void sellPiece(code);
+    // a serialized piece label looks like <SKU>-<4 digits>; anything else is rejected
+    if (/-\d{3,}$/.test(code)) { void sellPiece(code); return; }
+    flash("warn", `Unrecognized barcode: ${code}`);
   }, [flash, quickRecord, sellPiece]);
 
   function onScan(e: React.FormEvent) {
@@ -123,11 +129,10 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
                 <ScanLine className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input value={scan} onChange={(e) => setScan(e.target.value)} placeholder="Scan or type a SKU, press Enter" className="h-11 pl-9" />
               </form>
-              <Button type="button" size="lg" variant={camOpen ? "default" : "outline"} className="h-11 gap-2 px-7 text-base" onClick={() => setCamOpen((v) => !v)}>
-                {camOpen ? <><X className="h-5 w-5" /> Close</> : <><Camera className="h-5 w-5" /> Scan</>}
+              <Button type="button" size="lg" variant="default" className="h-11 gap-2 px-7 text-base" onClick={() => { setScanLog([]); setCamOpen(true); }}>
+                <Camera className="h-5 w-5" /> Scan
               </Button>
             </div>
-            {camOpen ? <div className="mt-3"><BarcodeScanner onDecode={resolveCode} /></div> : null}
             {toast ? (
               <div className={`mt-2 flex items-center gap-1.5 rounded-md px-3 py-2 text-sm ${toast.kind === "ok" ? "bg-ok/40 text-ok-foreground" : "bg-destructive/10 text-destructive"}`}>
                 {toast.kind === "ok" ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />} {toast.text}
@@ -198,6 +203,53 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
           </CardContent>
         </Card>
       </div>
+
+      {camOpen ? (
+        <div className="fixed inset-0 z-50 flex flex-col bg-background">
+          <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-base font-semibold"><Camera className="h-4 w-4 text-primary" /> Scan to sell</div>
+              <div className="text-xs text-muted-foreground">{quickSell ? "Each valid scan records a sale instantly." : "Each valid scan is added to the cart."}</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant={quickSell ? "default" : "outline"} className="h-9 gap-1.5 text-xs" onClick={() => setQuickSell((v) => !v)} aria-pressed={quickSell}>
+                <Zap className="h-3.5 w-3.5" /> Quick sell {quickSell ? "on" : "off"}
+              </Button>
+              <Button variant="ghost" size="icon" aria-label="Close scanner" onClick={() => setCamOpen(false)}><X className="h-5 w-5" /></Button>
+            </div>
+          </div>
+
+          <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-4 lg:flex-row lg:items-start lg:justify-center lg:p-8">
+            <div className="mx-auto w-full max-w-md">
+              <BarcodeScanner onDecode={resolveCode} />
+              <form onSubmit={onScan} className="relative mt-3">
+                <ScanLine className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input value={scan} onChange={(e) => setScan(e.target.value)} placeholder="…or type a code and press Enter" className="h-11 pl-9" />
+              </form>
+            </div>
+
+            <div className="w-full max-w-md lg:flex-1">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-sm font-medium">Scanned this session</span>
+                {scanLog.length > 0 ? <button onClick={() => setScanLog([])} className="text-xs text-muted-foreground hover:text-foreground">Clear</button> : null}
+              </div>
+              <div className="space-y-1.5">
+                {scanLog.length === 0 ? (
+                  <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">Point the camera at a product barcode — valid scans appear here.</p>
+                ) : scanLog.map((l) => (
+                  <div key={l.id} className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${l.kind === "ok" ? "bg-ok/30 text-ok-foreground" : "bg-destructive/10 text-destructive"}`}>
+                    {l.kind === "ok" ? <Check className="h-4 w-4 shrink-0" /> : <X className="h-4 w-4 shrink-0" />} <span className="min-w-0">{l.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-border p-4">
+            <Button className="w-full" variant="outline" onClick={() => setCamOpen(false)}>Done</Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
