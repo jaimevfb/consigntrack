@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { Printer, PackagePlus, Check, Undo2, Truck, Minus, Plus } from "lucide-react";
+import { Printer, PackagePlus, Check, Undo2, Truck, Minus, Plus, ChevronDown } from "lucide-react";
 import { buildReturnPackage } from "@/app/_actions/ledger-ops";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ export function ReturnBuilder({ storeId, consignors, existing }: { storeId: stri
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
   const [done, setDone] = React.useState<string | null>(null);
+  const [showReturns, setShowReturns] = React.useState(false);
 
   const active = consignors.find((c) => c.consignor_id === consignorId);
   const lines = active ? active.skus.filter((s) => (qty[s.sku_id] ?? 0) > 0).map((s) => ({ sku_id: s.sku_id, qty: qty[s.sku_id] })) : [];
@@ -83,8 +84,12 @@ export function ReturnBuilder({ storeId, consignors, existing }: { storeId: stri
       </Card>
 
       <Card>
-        <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Undo2 className="h-4 w-4 text-primary" /> Return packages</CardTitle></CardHeader>
-        <CardContent>
+        <button type="button" onClick={() => setShowReturns((v) => !v)} className="flex w-full items-center justify-between gap-2 p-4 text-left transition-colors hover:bg-muted/30">
+          <div className="flex items-center gap-2 text-base font-semibold"><Undo2 className="h-4 w-4 text-primary" /> Return packages <span className="tnum rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{existing.length}</span></div>
+          <ChevronDown className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${showReturns ? "rotate-180" : ""}`} />
+        </button>
+        {showReturns ? (
+        <CardContent className="pt-0">
           {existing.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No returns yet.</p> : (
             <div className="space-y-3">
               {existing.map((p) => (
@@ -109,6 +114,7 @@ export function ReturnBuilder({ storeId, consignors, existing }: { storeId: stri
             </div>
           )}
         </CardContent>
+        ) : null}
       </Card>
     </div>
   );

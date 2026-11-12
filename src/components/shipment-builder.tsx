@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { PackagePlus, Plus, Minus, Trash2, Printer, Truck, Search, Store, ArrowRight } from "lucide-react";
+import { PackagePlus, Plus, Minus, Trash2, Printer, Truck, Search, Store, ArrowRight, ChevronDown } from "lucide-react";
 import { createOutboundPackage } from "@/app/_actions/ledger-ops";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
   const [search, setSearch] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
+  const [showReady, setShowReady] = React.useState(false);
 
   const lines = skus.filter((s) => (qty[s.sku_id] ?? 0) > 0);
   const totalUnits = lines.reduce((a, s) => a + qty[s.sku_id], 0);
@@ -171,11 +172,15 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
 
       {packed.length > 0 ? (
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Ready to dispatch</CardTitle>
-            <p className="text-xs text-muted-foreground">Dispatch happens only when this package&apos;s QR is scanned at pickup — never a stray tap. Camera down? Type the code under the QR.</p>
-          </CardHeader>
-          <CardContent className="space-y-3">
+          <button type="button" onClick={() => setShowReady((v) => !v)} className="flex w-full items-center justify-between gap-2 p-4 text-left transition-colors hover:bg-muted/30">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-base font-semibold"><Truck className="h-4 w-4 text-primary" /> Ready to dispatch <span className="tnum rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{packed.length}</span></div>
+              <p className="mt-0.5 text-xs text-muted-foreground">Packed and awaiting pickup — dispatch only on a real QR scan. Click to view.</p>
+            </div>
+            <ChevronDown className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${showReady ? "rotate-180" : ""}`} />
+          </button>
+          {showReady ? (
+          <CardContent className="space-y-3 pt-0">
             {packed.map((p) => (
               <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -189,6 +194,7 @@ export function ShipmentBuilder({ consignorId, stores, skus, history }: { consig
               </div>
             ))}
           </CardContent>
+          ) : null}
         </Card>
       ) : null}
 

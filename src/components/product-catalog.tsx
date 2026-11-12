@@ -33,17 +33,7 @@ export function ProductCatalog({ products, stock = {} }: { products: Product[]; 
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [editId, setEditId] = React.useState<string | null>(null);
-  const [confirmId, setConfirmId] = React.useState<string | null>(null);
-  const [removingId, setRemovingId] = React.useState<string | null>(null);
   const set = (k: keyof Draft, v: string) => setDraft((d) => ({ ...d, [k]: v }));
-
-  async function remove(id: string) {
-    setRemovingId(id);
-    const res = await removeProduct({ id });
-    setRemovingId(null); setConfirmId(null);
-    if (!res.ok) { setError(res.error); return; }
-    router.refresh();
-  }
 
   async function add(e: React.FormEvent, another: boolean) {
     e.preventDefault();
@@ -100,11 +90,11 @@ export function ProductCatalog({ products, stock = {} }: { products: Product[]; 
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Category</TableHead><TableHead>Unit</TableHead><TableHead>In warehouse</TableHead><TableHead className="text-right">Price</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
+                <TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Category</TableHead><TableHead>Unit</TableHead><TableHead>In warehouse</TableHead><TableHead className="text-right">Price</TableHead><TableHead className="w-10" /></TableRow>
               </TableHeader>
               <TableBody>
                 {visible.map((p) => (
-                  <TableRow key={p.id}>
+                  <TableRow key={p.id} className="group cursor-pointer transition-colors hover:bg-muted/40" onClick={() => setEditId(p.id)}>
                     <TableCell>
                       <div className="font-medium">{p.name}{p.variant ? <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{p.variant}</span> : null}</div>
                       {p.perishable ? <div className="text-xs text-warn-foreground">Perishable · {p.shelf_life_days}d</div> : null}
@@ -114,20 +104,7 @@ export function ProductCatalog({ products, stock = {} }: { products: Product[]; 
                     <TableCell className="text-sm text-muted-foreground">{unitShort(p.unit_of_measure)}</TableCell>
                     <TableCell><StockCell product={p} onHand={stock[p.id] ?? 0} /></TableCell>
                     <TableCell className="tnum text-right">{formatPHP(p.unit_price)}</TableCell>
-                    <TableCell className="text-right">
-                      {confirmId === p.id ? (
-                        <div className="inline-flex items-center justify-end gap-1">
-                          <span className="text-xs text-muted-foreground">Remove?</span>
-                          <Button variant="ghost" size="sm" className="text-destructive" disabled={removingId === p.id} onClick={() => remove(p.id)}>{removingId === p.id ? "Removing…" : "Yes"}</Button>
-                          <Button variant="ghost" size="sm" onClick={() => setConfirmId(null)}>No</Button>
-                        </div>
-                      ) : (
-                        <div className="inline-flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => setEditId(p.id)}><Pencil className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" aria-label="Remove" onClick={() => { setError(null); setConfirmId(p.id); }}><Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" /></Button>
-                        </div>
-                      )}
-                    </TableCell>
+                    <TableCell className="text-right"><Pencil className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" /></TableCell>
                   </TableRow>
                 ))}
                 {visible.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground">No products yet.</TableCell></TableRow> : null}
@@ -170,6 +147,15 @@ function ProductEditModal({ product, onHand, onClose, onDone }: { product: Produ
   const [err, setErr] = React.useState<string | null>(null);
   const [stockMsg, setStockMsg] = React.useState<string | null>(null);
   const [onHandLocal, setOnHandLocal] = React.useState(onHand);
+  const [confirmDel, setConfirmDel] = React.useState(false);
+
+  async function del() {
+    setBusy(true); setErr(null);
+    const res = await removeProduct({ id: product.id });
+    setBusy(false);
+    if (!res.ok) { setErr(res.error); setConfirmDel(false); return; }
+    onDone();
+  }
 
   async function save() {
     setBusy(true); setErr(null);
@@ -222,9 +208,20 @@ function ProductEditModal({ product, onHand, onClose, onDone }: { product: Produ
           {stockMsg ? <p className="mt-2 text-xs text-muted-foreground">{stockMsg}</p> : null}
         </div>
 
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button disabled={busy} onClick={save}>{busy ? "Saving…" : "Save changes"}</Button>
+        <div className="mt-6 flex items-center justify-between gap-2 border-t border-border pt-4">
+          {confirmDel ? (
+            <div className="flex items-center gap-1.5 text-sm">
+              <span className="text-muted-foreground">Delete this product?</span>
+              <Button variant="ghost" size="sm" className="text-destructive" disabled={busy} onClick={del}>{busy ? "Deleting…" : "Delete"}</Button>
+              <Button variant="ghost" size="sm" onClick={() => setConfirmDel(false)}>Cancel</Button>
+            </div>
+          ) : (
+            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-destructive" onClick={() => setConfirmDel(true)}><Trash2 className="h-4 w-4" /> Delete product</Button>
+          )}
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button disabled={busy} onClick={save}>{busy ? "Saving…" : "Save changes"}</Button>
+          </div>
         </div>
       </div>
     </div>
