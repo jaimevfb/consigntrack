@@ -35,3 +35,36 @@ export async function connectPartner(input: unknown): Promise<ActionResult> {
   revalidatePath("/store/partners");
   return { ok: true };
 }
+
+const editSchema = z.object({
+  id: z.string().uuid(),
+  commission_pct: z.coerce.number().min(0).max(100),
+  cadence: z.enum(["weekly", "monthly", "quarterly"]),
+  damage_liability: z.enum(["consignor", "store", "shared"]),
+  damage_store_share_pct: z.coerce.number().min(0).max(100),
+  consignment_period_days: z.coerce.number().int().positive(),
+  end_of_period_action: z.enum(["return", "extend", "discount"]),
+  is_active: z.coerce.boolean(),
+});
+
+/** Edit an agreement's terms (commission, damage share, cadence, period) — consignor/store/admin. */
+export async function updateAgreementTerms(input: unknown): Promise<ActionResult> {
+  const parsed = editSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  const d = parsed.data;
+  const supabase = createClient();
+  const { error } = await supabase.rpc("update_agreement_terms", {
+    p_id: d.id,
+    p_commission_pct: d.commission_pct,
+    p_cadence: d.cadence,
+    p_damage_liability: d.damage_liability,
+    p_damage_store_share_pct: d.damage_store_share_pct,
+    p_consignment_period_days: d.consignment_period_days,
+    p_end_of_period_action: d.end_of_period_action,
+    p_is_active: d.is_active,
+  });
+  if (error) return { ok: false, error: error.message.replace(/^.*?:\s*/, "") };
+  revalidatePath("/consignor/partners");
+  revalidatePath("/store/partners");
+  return { ok: true };
+}
