@@ -1,20 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Receipt, AlertTriangle, ScanLine, Pencil, FileUp, ChevronDown } from "lucide-react";
+import { Receipt, AlertTriangle, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { SaleRecord } from "@/lib/ledger-data";
 import { formatPHP, formatDate, phDateKey, PH_TZ } from "@/lib/utils";
 
-const SOURCE: Record<string, { label: string; icon: typeof ScanLine }> = {
-  POS_SCAN: { label: "Scan", icon: ScanLine },
-  MANUAL: { label: "Manual", icon: Pencil },
-  CSV_IMPORT: { label: "Import", icon: FileUp },
-};
-function source(reason: string | null) {
-  const base = (reason ?? "").split(" · ")[0];
-  return SOURCE[base] ?? { label: base || "Sale", icon: Receipt };
-}
 const shortTime = (iso: string) => new Date(iso).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit", timeZone: PH_TZ });
 const isToday = (iso: string) => phDateKey(iso) === phDateKey(new Date());
 
@@ -39,7 +30,7 @@ export function SalesHistory({ sales }: { sales: SaleRecord[] }) {
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base"><Receipt className="h-4 w-4 text-primary" /> Recent sales</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base"><Receipt className="h-4 w-4 text-primary" /> Sales records</CardTitle>
           {today.length > 0 ? (
             <span className="text-xs text-muted-foreground">Today <span className="tnum font-semibold text-foreground">{formatPHP(todayTotal)}</span> · {todayUnits} units</span>
           ) : null}
@@ -60,15 +51,12 @@ export function SalesHistory({ sales }: { sales: SaleRecord[] }) {
                   </div>
                   <div className="divide-y divide-border">
                     {g.items.map((s) => {
-                      const src = source(s.source);
-                      const Icon = src.icon;
                       const expanded = open.has(s.at);
                       const summary = s.lines.length === 1 ? `${s.lines[0].name} ×${s.lines[0].qty}` : `${s.lines[0].name} + ${s.lines.length - 1} more`;
                       return (
                         <div key={s.at}>
                           <button onClick={() => toggle(s.at)} className="flex w-full items-center gap-4 rounded-lg px-2 py-3.5 text-left transition-colors hover:bg-muted/40">
                             <span className="tnum w-20 shrink-0 text-sm text-muted-foreground">{shortTime(s.at)}</span>
-                            <span className="hidden shrink-0 items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground sm:inline-flex"><Icon className="h-3.5 w-3.5" /> {src.label}</span>
                             <span className="min-w-0 flex-1 truncate text-sm font-medium">{summary}</span>
                             {s.flagged ? <AlertTriangle className="h-4 w-4 shrink-0 text-warn-foreground" /> : null}
                             <span className="tnum shrink-0 text-base font-semibold">{formatPHP(s.total)}</span>
