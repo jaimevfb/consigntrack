@@ -165,7 +165,7 @@ export function AppShell({
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-gradient-to-b from-[#273AA6] to-[#1A2566] text-white lg:flex">
         <div className="flex h-16 items-center px-5">
           <Link href="/" aria-label="ConsignTrack home">
-            <Wordmark inverted className="text-white [&_span]:text-white" />
+            <Wordmark showMark={false} inverted className="text-white [&_span]:text-white" />
           </Link>
         </div>
         <div className="flex-1 overflow-y-auto p-3">
@@ -183,7 +183,7 @@ export function AppShell({
           <div className="absolute inset-0 bg-foreground/30" onClick={() => setOpen(false)} />
           <aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-gradient-to-b from-[#273AA6] to-[#1A2566] text-white">
             <div className="flex h-16 items-center justify-between border-b border-white/10 px-5">
-              <Wordmark inverted className="text-white [&_span]:text-white" />
+              <Wordmark showMark={false} inverted className="text-white [&_span]:text-white" />
               <Button variant="ghost" size="icon" aria-label="Close menu" className="text-white hover:bg-white/10 hover:text-white" onClick={() => setOpen(false)}>
                 <X className="h-5 w-5" />
               </Button>
@@ -212,7 +212,7 @@ export function AppShell({
             <Menu className="h-5 w-5" />
           </Button>
           <div className="lg:hidden">
-            <Wordmark showMark />
+            <Wordmark showMark={false} />
           </div>
           <div className="ml-auto flex items-center gap-3">
             <div className="hidden text-right sm:block">

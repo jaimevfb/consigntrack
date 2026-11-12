@@ -57,6 +57,35 @@ export async function sellUnit(serial: string): Promise<ActionResult & { name?: 
   return { ok: true, name: d.name, price: d.price };
 }
 
+/** Validate a scanned piece without selling it (for adding to the cart). */
+export async function lookupUnit(serial: string): Promise<ActionResult & { sku_id?: string; name?: string; price?: number }> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("lookup_unit", { p_serial: serial });
+  if (error) return { ok: false, error: clean(error.message) };
+  const d = (data ?? {}) as { sku_id?: string; name?: string; price?: number };
+  return { ok: true, sku_id: d.sku_id, name: d.name, price: d.price };
+}
+
+/** Check out a cart: SKU quantity lines + individually-scanned piece serials. */
+export async function recordSale(storeId: string, skuLines: SaleLine[], serials: string[]): Promise<ActionResult> {
+  const supabase = createClient();
+  if (skuLines.length > 0) {
+    const { error } = await supabase.rpc("pos_sale", { p_consignee: storeId, p_lines: skuLines, p_source: "POS_SCAN" });
+    if (error) {
+      const msg = error.message.includes("OVERSELL") ? "Sale rejected: not enough stock on hand. " + clean(error.message) : clean(error.message);
+      return { ok: false, error: msg };
+    }
+  }
+  for (const serial of serials) {
+    const { error } = await supabase.rpc("sell_unit", { p_serial: serial });
+    if (error) return { ok: false, error: `Piece ${serial}: ${clean(error.message)}` };
+  }
+  revalidatePath("/store/sales");
+  revalidatePath("/store");
+  revalidatePath("/store/inventory");
+  return { ok: true };
+}
+
 export async function buildReturnPackage(consignorId: string, storeId: string, lines: { sku_id: string; qty: number }[]): Promise<ActionResult & { packageId?: string }> {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("build_return_package", { p_consignor: consignorId, p_consignee: storeId, p_lines: lines });
