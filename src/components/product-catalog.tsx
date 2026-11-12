@@ -3,7 +3,9 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, X, Copy, Trash2, PackagePlus } from "lucide-react";
-import { createProduct, updateProduct, removeProduct, receiveStock } from "@/app/_actions/catalog";
+import { createProduct, updateProduct, removeProduct, receiveStock, mintPieceLabels, listPieceSerials } from "@/app/_actions/catalog";
+import { LabelSheet } from "@/components/label-sheet";
+import { Barcode as BarcodeIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -148,6 +150,27 @@ function ProductEditModal({ product, onHand, onClose, onDone }: { product: Produ
   const [stockMsg, setStockMsg] = React.useState<string | null>(null);
   const [onHandLocal, setOnHandLocal] = React.useState(onHand);
   const [confirmDel, setConfirmDel] = React.useState(false);
+  const [serials, setSerials] = React.useState<string[] | null>(null);
+  const [labelBusy, setLabelBusy] = React.useState(false);
+  const [sheetOpen, setSheetOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    let on = true;
+    listPieceSerials(product.id).then((s) => { if (on) setSerials(s); });
+    return () => { on = false; };
+  }, [product.id]);
+
+  async function generateAndPrint() {
+    setLabelBusy(true);
+    const have = serials?.length ?? 0;
+    const need = onHandLocal - have;
+    if (need > 0) {
+      const res = await mintPieceLabels({ sku_id: product.id, qty: need });
+      if (!res.ok) { setLabelBusy(false); setStockMsg(res.error); return; }
+    }
+    const fresh = await listPieceSerials(product.id);
+    setSerials(fresh); setLabelBusy(false); setSheetOpen(true);
+  }
 
   async function del() {
     setBusy(true); setErr(null);
@@ -208,6 +231,21 @@ function ProductEditModal({ product, onHand, onClose, onDone }: { product: Produ
           {stockMsg ? <p className="mt-2 text-xs text-muted-foreground">{stockMsg}</p> : null}
         </div>
 
+        <div className="mt-4 rounded-xl border border-border p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <div className="text-sm font-medium">Piece barcodes</div>
+              <div className="text-xs text-muted-foreground">
+                {serials === null ? "Loading…" : `${serials.length} of ${onHandLocal} pieces labeled`}
+              </div>
+            </div>
+            <Button type="button" variant="outline" size="sm" className="gap-1.5" disabled={labelBusy || onHandLocal <= 0} onClick={generateAndPrint}>
+              <BarcodeIcon className="h-4 w-4" /> {labelBusy ? "Generating…" : "Generate & print labels"}
+            </Button>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">One unique barcode per piece. Print the sheet, stick one on each item, and scan it at the store to sell that exact piece.</p>
+        </div>
+
         <div className="mt-6 flex items-center justify-between gap-2 border-t border-border pt-4">
           {confirmDel ? (
             <div className="flex items-center gap-1.5 text-sm">
@@ -224,6 +262,7 @@ function ProductEditModal({ product, onHand, onClose, onDone }: { product: Produ
           </div>
         </div>
       </div>
+      {sheetOpen ? <LabelSheet name={product.name} serials={serials ?? []} onClose={() => setSheetOpen(false)} /> : null}
     </div>
   );
 }

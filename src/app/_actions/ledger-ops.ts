@@ -42,6 +42,21 @@ export async function posSale(storeId: string, lines: SaleLine[], source = "MANU
   return { ok: true };
 }
 
+/** Sell one serialized piece by its scanned barcode. Records a 1-unit SALE and marks the piece sold. */
+export async function sellUnit(serial: string): Promise<ActionResult & { name?: string; price?: number }> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("sell_unit", { p_serial: serial });
+  if (error) {
+    const msg = error.message.includes("OVERSELL") ? "Sale rejected: not enough stock on hand." : clean(error.message);
+    return { ok: false, error: msg };
+  }
+  revalidatePath("/store/sales");
+  revalidatePath("/store");
+  revalidatePath("/store/inventory");
+  const d = (data ?? {}) as { name?: string; price?: number };
+  return { ok: true, name: d.name, price: d.price };
+}
+
 export async function buildReturnPackage(consignorId: string, storeId: string, lines: { sku_id: string; qty: number }[]): Promise<ActionResult & { packageId?: string }> {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("build_return_package", { p_consignor: consignorId, p_consignee: storeId, p_lines: lines });

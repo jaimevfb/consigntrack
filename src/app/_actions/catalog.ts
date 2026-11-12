@@ -69,6 +69,25 @@ export async function createProduct(input: unknown): Promise<ActionResult> {
   return { ok: true };
 }
 
+/** Mint N serialized piece-barcodes for a product; returns the new serials. */
+export async function mintPieceLabels(input: unknown): Promise<ActionResult & { serials?: string[] }> {
+  const parsed = z.object({ sku_id: z.string().uuid(), qty: z.coerce.number().int().positive() }).safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid request" };
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("mint_units", { p_sku: parsed.data.sku_id, p_qty: parsed.data.qty });
+  if (error) return { ok: false, error: error.message };
+  const serials = Array.isArray(data) ? data.map((r: unknown) => (typeof r === "string" ? r : (r as { mint_units?: string })?.mint_units ?? "")).filter(Boolean) : [];
+  revalidatePath("/consignor/products");
+  return { ok: true, serials };
+}
+
+/** In-stock piece serials for a product (for printing labels). */
+export async function listPieceSerials(skuId: string): Promise<string[]> {
+  const supabase = createClient();
+  const { data } = await supabase.from("product_units").select("serial").eq("product_id", skuId).eq("status", "in_stock").order("serial");
+  return ((data ?? []) as { serial: string }[]).map((r) => r.serial);
+}
+
 /** Add warehouse stock for a product (ledger-backed PRODUCE entry). */
 export async function receiveStock(input: unknown): Promise<ActionResult & { onHand?: number }> {
   const parsed = z.object({

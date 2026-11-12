@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { ScanLine, Plus, Minus, Trash2, Check, Search, ShoppingCart, Camera, X, Zap } from "lucide-react";
-import { posSale, type SaleLine } from "@/app/_actions/ledger-ops";
+import { posSale, sellUnit, type SaleLine } from "@/app/_actions/ledger-ops";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,9 +13,9 @@ import { formatPHP } from "@/lib/utils";
 export interface SellableSku { sku_id: string; sku: string; name: string; unit_price: number; on_hand: number; consignor_name: string }
 interface CartLine extends SellableSku { qty: number }
 
-// Accept a plain SKU, or a product-label QR payload like "CTSKU:MAR-0016".
-function normalizeCode(raw: string) {
-  return raw.trim().replace(/^ctsku:/i, "").trim().toLowerCase();
+// Strip an optional "CTSKU:" prefix; keep original case (serials are case-sensitive).
+function cleanCode(raw: string) {
+  return raw.trim().replace(/^ctsku:/i, "").trim();
 }
 
 export function SalesTerminal({ storeId, skus }: { storeId: string; skus: SellableSku[] }) {
@@ -62,14 +62,25 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
     else flash("warn", res.error);
   }, [storeId, flash, router]);
 
+  // Sell one serialized piece immediately (its barcode encodes a unique serial).
+  const sellPiece = React.useCallback(async (serial: string) => {
+    const res = await sellUnit(serial);
+    if (res.ok) { flash("ok", `Sold ${res.name ?? "piece"} · ${serial}`); router.refresh(); }
+    else flash("warn", res.error);
+  }, [flash, router]);
+
   // One place every scan path (camera or typed) flows through.
   const resolveCode = React.useCallback((raw: string) => {
-    const code = normalizeCode(raw);
-    const hit = skusRef.current.find((s) => s.sku.toLowerCase() === code);
-    if (!hit) { flash("warn", `No sellable product for "${raw.trim()}"`); return; }
-    if (quickRef.current) { void quickRecord(hit); }
-    else { add(hit); flash("ok", `Added ${hit.name}`); }
-  }, [flash, quickRecord]);
+    const code = cleanCode(raw);
+    const hit = skusRef.current.find((s) => s.sku.toLowerCase() === code.toLowerCase());
+    if (hit) {
+      // plain SKU barcode → cart (or quick-sell)
+      if (quickRef.current) { void quickRecord(hit); } else { add(hit); flash("ok", `Added ${hit.name}`); }
+      return;
+    }
+    // otherwise treat it as a unique piece serial and sell that exact piece
+    void sellPiece(code);
+  }, [flash, quickRecord, sellPiece]);
 
   function onScan(e: React.FormEvent) {
     e.preventDefault();
