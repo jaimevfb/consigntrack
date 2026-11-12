@@ -66,7 +66,7 @@ export function SalesHistory({ sales }: { sales: SaleRecord[] }) {
                             <div className="mb-2 space-y-1.5 rounded-lg bg-muted/30 px-3 py-3 sm:pl-[104px]">
                               {s.lines.map((l, j) => (
                                 <div key={j} className="flex items-baseline justify-between gap-3 text-sm">
-                                  <span className="min-w-0 truncate text-muted-foreground"><span className="font-medium text-foreground">{l.name}</span> · {l.sku} · {l.qty} × {formatPHP(l.unit_price)}</span>
+                                  <span className="min-w-0 truncate text-muted-foreground"><span className="font-medium text-foreground">{l.name}</span> · {l.qty} × {formatPHP(l.unit_price)}</span>
                                   <span className="tnum shrink-0 font-medium">{formatPHP(l.total)}</span>
                                 </div>
                               ))}

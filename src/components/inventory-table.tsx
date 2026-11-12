@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, ChevronRight, Package, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { StatusPill } from "@/components/status-pill";
 import { CustodyBar } from "@/components/custody-bar";
 import { Input } from "@/components/ui/input";
@@ -113,9 +113,7 @@ export function InventoryTable({ rows }: { rows: InvRow[] }) {
                     <td className="pl-3 text-muted-foreground">{isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</td>
                     <td className="p-3">
                       <div className="flex items-center gap-3">
-                        {r.photo_url
-                          ? <img src={r.photo_url} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover" />
-                          : <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Package className="h-4 w-4" /></span>}
+                        {r.photo_url ? <img src={r.photo_url} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover" /> : null}
                         <div className="min-w-0">
                           <div className="truncate font-medium">{r.name}</div>
                           <div className="tnum truncate text-xs text-muted-foreground">{r.sku} · {r.consignor_name}</div>

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Check, X, Package, Copy, Trash2, PackagePlus } from "lucide-react";
+import { Plus, Pencil, Check, X, Copy, Trash2, PackagePlus } from "lucide-react";
 import { createProduct, updateProduct, removeProduct, receiveStock } from "@/app/_actions/catalog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -111,7 +111,7 @@ export function ProductCatalog({ products, stock = {} }: { products: Product[]; 
                     <TableRow key={p.id}>
                       <TableCell>
                         <div className="flex items-center gap-2.5">
-                          {p.photo_url ? <img src={p.photo_url} alt="" className="h-9 w-9 rounded-md border border-border object-cover" /> : <span className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground"><Package className="h-4 w-4" /></span>}
+                          {p.photo_url ? <img src={p.photo_url} alt="" className="h-9 w-9 rounded-md border border-border object-cover" /> : null}
                           <div>
                             <div className="font-medium">{p.name}{p.variant ? <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{p.variant}</span> : null}</div>
                             {p.perishable ? <div className="text-xs text-warn-foreground">Perishable · {p.shelf_life_days}d</div> : null}

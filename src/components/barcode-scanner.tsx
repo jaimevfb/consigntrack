@@ -20,14 +20,24 @@ export function BarcodeScanner({ onDecode }: { onDecode: (code: string) => void 
     let cancelled = false;
     (async () => {
       try {
-        const { Html5Qrcode } = await import("html5-qrcode");
+        const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
         if (cancelled) return;
-        const h = new Html5Qrcode("sku-scanner", { verbose: false });
+        const h = new Html5Qrcode("sku-scanner", {
+          verbose: false,
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.QR_CODE,
+          ],
+        });
         scannerRef.current = h as unknown as { stop: () => Promise<void>; clear: () => void };
         armedRef.current = false;
         await h.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 220, height: 220 } },
+          { fps: 10, qrbox: { width: 260, height: 150 } },
           (decoded: string) => {
             if (!armedRef.current) return;
             armedRef.current = false; // debounce the same code
