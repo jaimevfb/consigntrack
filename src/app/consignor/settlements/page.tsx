@@ -2,11 +2,8 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { SettlementStatusPill } from "@/components/status-pill";
-import { RowActionButton } from "@/components/row-action-button";
-import { PaymentReceipt } from "@/components/payment-receipt";
-import { SettlementStatementButton, type SettlementStatement } from "@/components/settlement-statement";
-import { formatPHP, formatDate } from "@/lib/utils";
+import { type SettlementStatement } from "@/components/settlement-statement";
+import { SettlementRow } from "@/components/settlement-row";
 
 export default async function ConsignorSettlementsPage() {
   await requireProfile();
@@ -77,29 +74,27 @@ export default async function ConsignorSettlementsPage() {
               <TableBody>
                 {rows.map((s) => {
                   const payment = s.payments?.[0];
-                  const canConfirm = s.status === "paid" && payment?.paid_at && !payment?.confirmed_at;
-                  const deductions = (s.returns_total ? ` · −${formatPHP(s.returns_total)} ret` : "") + (s.damage_total ? ` · −${formatPHP(s.damage_total)} dmg` : "");
+                  const canConfirm = !!(s.status === "paid" && payment?.paid_at && !payment?.confirmed_at);
                   return (
-                    <TableRow key={s.id}>
-                      <TableCell>
-                        <div className="whitespace-nowrap text-sm font-medium">{s.agreements?.stores?.name ?? "—"}</div>
-                        <div className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(s.period_start)} – {formatDate(s.period_end)}</div>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-right">
-                        <div className="tnum font-semibold">{formatPHP(s.net_payable)}</div>
-                        <div className="tnum text-xs text-muted-foreground">{formatPHP(s.gross_sales)} gross · −{formatPHP(s.commission)} comm{deductions}</div>
-                      </TableCell>
-                      <TableCell><SettlementStatusPill status={s.status} /></TableCell>
-                      <TableCell><PaymentReceipt method={payment?.method ?? null} reference={payment?.reference ?? null} /></TableCell>
-                      <TableCell className="text-right">
-                        <div className="inline-flex items-center justify-end gap-1">
-                          <SettlementStatementButton statement={toStatement(s)} />
-                          {canConfirm ? (
-                            <RowActionButton kind="confirmReceived" id={s.id} label="Confirm received" pendingLabel="Confirming…" variant="outline" />
-                          ) : null}
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    <SettlementRow
+                      key={s.id}
+                      data={{
+                        id: s.id,
+                        storeName: s.agreements?.stores?.name ?? "—",
+                        periodStart: s.period_start,
+                        periodEnd: s.period_end,
+                        net: s.net_payable,
+                        gross: s.gross_sales,
+                        commission: s.commission,
+                        commissionPct: s.agreements?.commission_pct ?? 0,
+                        returnsTotal: s.returns_total,
+                        damageTotal: s.damage_total,
+                        status: s.status,
+                        payment: { method: payment?.method ?? null, reference: payment?.reference ?? null },
+                        canConfirm,
+                        statement: toStatement(s),
+                      }}
+                    />
                   );
                 })}
                 {rows.length === 0 ? (
