@@ -127,18 +127,16 @@ export function InventoryTable({ rows }: { rows: InvRow[] }) {
                     <tr className="border-t border-border bg-muted/20">
                       <td />
                       <td colSpan={4} className="p-3">
-                        <div className="grid items-center gap-4 sm:grid-cols-2">
-                          <div>
-                            <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
-                              <dt className="text-muted-foreground">Category</dt><dd className="text-right">{r.category}</dd>
-                              <dt className="text-muted-foreground">Unit</dt><dd className="text-right">{unitLabel(r.unit_of_measure)}</dd>
-                              <dt className="text-muted-foreground">Agreed price</dt><dd className="tnum text-right">{formatPHP(r.unit_price)}</dd>
-                              <dt className="text-muted-foreground">Store commission</dt><dd className="tnum text-right">{r.commission_pct}%</dd>
-                              <dt className="text-muted-foreground">Sold last 30 days</dt><dd className="tnum text-right">{formatNumber(r.sold)}</dd>
-                            </dl>
-                          </div>
-                          <div>
-                            <div className="mb-1.5 text-xs font-medium text-muted-foreground">Where the goods are</div>
+                        <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
+                          <dl className="grid grid-cols-2 content-start gap-x-4 gap-y-2 text-sm">
+                            <dt className="text-muted-foreground">Category</dt><dd className="text-right">{r.category}</dd>
+                            <dt className="text-muted-foreground">Unit</dt><dd className="text-right">{unitLabel(r.unit_of_measure)}</dd>
+                            <dt className="text-muted-foreground">Agreed price</dt><dd className="tnum text-right">{formatPHP(r.unit_price)}</dd>
+                            <dt className="text-muted-foreground">Store commission</dt><dd className="tnum text-right">{r.commission_pct}%</dd>
+                            <dt className="text-muted-foreground">Sold last 30 days</dt><dd className="tnum text-right">{formatNumber(r.sold)}</dd>
+                          </dl>
+                          <div className="flex flex-col justify-center rounded-lg border border-border bg-background/50 p-4">
+                            <div className="mb-2 text-xs font-medium text-muted-foreground">Where the goods are</div>
                             <CustodyBar segments={[
                               { key: "onhand", label: "On hand", value: r.on_hand },
                               { key: "disputed", label: "Disputed", value: r.in_dispute },
