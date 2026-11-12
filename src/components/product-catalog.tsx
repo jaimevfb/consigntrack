@@ -28,7 +28,9 @@ function toPayload(d: Draft) {
   return { name: d.name, category: resolveCategory(d), variant: d.variant || undefined, unit_of_measure: d.unit, unit_price: Number(d.price) || 0, cost: d.cost ? Number(d.cost) : undefined, photo_url: d.photo_url || undefined, description: d.description || undefined, opening_stock: d.opening ? Number(d.opening) : undefined };
 }
 
-export function ProductCatalog({ products, stock = {} }: { products: Product[]; stock?: Record<string, number> }) {
+type PieceTally = { labeled: number; inStock: number; sold: number };
+
+export function ProductCatalog({ products, stock = {}, pieces = {} }: { products: Product[]; stock?: Record<string, number>; pieces?: Record<string, PieceTally> }) {
   const router = useRouter();
   const [adding, setAdding] = React.useState(false);
   const [draft, setDraft] = React.useState<Draft>(EMPTY);
@@ -92,7 +94,7 @@ export function ProductCatalog({ products, stock = {} }: { products: Product[]; 
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Category</TableHead><TableHead>Unit</TableHead><TableHead>In warehouse</TableHead><TableHead className="text-right">Price</TableHead><TableHead className="w-10" /></TableRow>
+                <TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Category</TableHead><TableHead>Unit</TableHead><TableHead>In warehouse</TableHead><TableHead>Barcodes</TableHead><TableHead className="text-right">Price</TableHead><TableHead className="w-10" /></TableRow>
               </TableHeader>
               <TableBody>
                 {visible.map((p) => (
@@ -105,11 +107,12 @@ export function ProductCatalog({ products, stock = {} }: { products: Product[]; 
                     <TableCell><StatusPill tone="neutral">{p.category}</StatusPill></TableCell>
                     <TableCell className="text-sm text-muted-foreground">{unitShort(p.unit_of_measure)}</TableCell>
                     <TableCell><StockCell product={p} onHand={stock[p.id] ?? 0} /></TableCell>
+                    <TableCell><BarcodeCell tally={pieces[p.id]} onHand={stock[p.id] ?? 0} /></TableCell>
                     <TableCell className="tnum text-right">{formatPHP(p.unit_price)}</TableCell>
                     <TableCell className="text-right"><Pencil className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" /></TableCell>
                   </TableRow>
                 ))}
-                {visible.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground">No products yet.</TableCell></TableRow> : null}
+                {visible.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground">No products yet.</TableCell></TableRow> : null}
               </TableBody>
             </Table>
           </div>
@@ -126,6 +129,21 @@ export function ProductCatalog({ products, stock = {} }: { products: Product[]; 
 
 function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return <div className={`space-y-1.5 ${className ?? ""}`}><Label>{label}</Label>{children}</div>;
+}
+
+/** Per-product barcode status. Issue/print happens inside the Edit card. */
+function BarcodeCell({ tally, onHand }: { tally?: PieceTally; onHand: number }) {
+  if (!tally || tally.labeled === 0) {
+    return <span className="text-xs text-muted-foreground">{onHand > 0 ? "Not issued" : "—"}</span>;
+  }
+  const unlabeled = onHand - tally.inStock; // in-warehouse stock without a barcode yet
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary"><BarcodeIcon className="h-3 w-3" /> {tally.labeled} issued</span>
+      {tally.sold > 0 ? <span className="text-muted-foreground">{tally.sold} sold</span> : null}
+      {unlabeled > 0 ? <span className="text-warn-foreground">{unlabeled} unlabeled</span> : null}
+    </div>
+  );
 }
 
 /** Warehouse on-hand, display only. Stock is added from the Edit modal. */
