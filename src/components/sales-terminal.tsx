@@ -2,15 +2,21 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ScanLine, Plus, Trash2, Check, Search, ShoppingCart } from "lucide-react";
+import { ScanLine, Plus, Trash2, Check, Search, ShoppingCart, Camera, X, Zap } from "lucide-react";
 import { posSale, type SaleLine } from "@/app/_actions/ledger-ops";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarcodeScanner } from "@/components/barcode-scanner";
 import { formatPHP } from "@/lib/utils";
 
 export interface SellableSku { sku_id: string; sku: string; name: string; unit_price: number; on_hand: number; consignor_name: string }
 interface CartLine extends SellableSku { qty: number }
+
+// Accept a plain SKU, or a product-label QR payload like "CTSKU:MAR-0016".
+function normalizeCode(raw: string) {
+  return raw.trim().replace(/^ctsku:/i, "").trim().toLowerCase();
+}
 
 export function SalesTerminal({ storeId, skus }: { storeId: string; skus: SellableSku[] }) {
   const router = useRouter();
@@ -20,8 +26,22 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
   const [ok, setOk] = React.useState(false);
+  const [camOpen, setCamOpen] = React.useState(false);
+  const [quickSell, setQuickSell] = React.useState(false);
+  const [toast, setToast] = React.useState<{ kind: "ok" | "warn"; text: string } | null>(null);
+
+  // refs so the (stable) camera callback always sees the latest state
+  const skusRef = React.useRef(skus); skusRef.current = skus;
+  const quickRef = React.useRef(quickSell); quickRef.current = quickSell;
+  const toastTimer = React.useRef<number | undefined>(undefined);
 
   const filtered = skus.filter((s) => `${s.name} ${s.sku}`.toLowerCase().includes(query.toLowerCase()));
+
+  const flash = React.useCallback((kind: "ok" | "warn", text: string) => {
+    setToast({ kind, text });
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 2200);
+  }, []);
 
   function add(s: SellableSku) {
     setOk(false);
@@ -35,12 +55,26 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
     });
   }
 
+  // Record a single unit immediately (quick-sell mode).
+  const quickRecord = React.useCallback(async (s: SellableSku) => {
+    const res = await posSale(storeId, [{ sku_id: s.sku_id, qty: 1, unit_price: s.unit_price }], "POS_SCAN");
+    if (res.ok) { flash("ok", `Sold ${s.name} · ${formatPHP(s.unit_price)}`); router.refresh(); }
+    else flash("warn", res.error);
+  }, [storeId, flash, router]);
+
+  // One place every scan path (camera or typed) flows through.
+  const resolveCode = React.useCallback((raw: string) => {
+    const code = normalizeCode(raw);
+    const hit = skusRef.current.find((s) => s.sku.toLowerCase() === code);
+    if (!hit) { flash("warn", `No sellable product for "${raw.trim()}"`); return; }
+    if (quickRef.current) { void quickRecord(hit); }
+    else { add(hit); flash("ok", `Added ${hit.name}`); }
+  }, [flash, quickRecord]);
+
   function onScan(e: React.FormEvent) {
     e.preventDefault();
-    const code = scan.trim().toLowerCase();
-    const hit = skus.find((s) => s.sku.toLowerCase() === code);
+    if (scan.trim()) resolveCode(scan);
     setScan("");
-    if (hit) add(hit); else setErr(`No sellable SKU "${scan.trim()}"`);
   }
 
   function setQty(id: string, qty: number) {
@@ -66,14 +100,31 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
       <div className="lg:col-span-3">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Products</CardTitle>
-            <form onSubmit={onScan} className="mt-2 flex gap-2">
-              <div className="relative flex-1">
-                <ScanLine className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input value={scan} onChange={(e) => setScan(e.target.value)} placeholder="Scan or type a SKU, press Enter" className="pl-8" />
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base">Products</CardTitle>
+              <Button size="sm" variant={quickSell ? "default" : "outline"} className="h-8 gap-1.5 text-xs" onClick={() => setQuickSell((v) => !v)} aria-pressed={quickSell}>
+                <Zap className="h-3.5 w-3.5" /> Quick sell {quickSell ? "on" : "off"}
+              </Button>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{quickSell ? "Each scan is recorded as a sale instantly." : "Scans build a cart — review, then Record sale."}</p>
+            <div className="mt-2 flex gap-2">
+              <form onSubmit={onScan} className="flex flex-1 gap-2">
+                <div className="relative flex-1">
+                  <ScanLine className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input value={scan} onChange={(e) => setScan(e.target.value)} placeholder="Scan or type a SKU, press Enter" className="pl-8" />
+                </div>
+                <Button type="submit" variant="outline">Add</Button>
+              </form>
+              <Button type="button" variant={camOpen ? "default" : "outline"} className="gap-1.5" onClick={() => setCamOpen((v) => !v)}>
+                {camOpen ? <><X className="h-4 w-4" /> Close</> : <><Camera className="h-4 w-4" /> Scan</>}
+              </Button>
+            </div>
+            {camOpen ? <div className="mt-3"><BarcodeScanner onDecode={resolveCode} /></div> : null}
+            {toast ? (
+              <div className={`mt-2 flex items-center gap-1.5 rounded-md px-3 py-2 text-sm ${toast.kind === "ok" ? "bg-ok/40 text-ok-foreground" : "bg-destructive/10 text-destructive"}`}>
+                {toast.kind === "ok" ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />} {toast.text}
               </div>
-              <Button type="submit" variant="outline">Add</Button>
-            </form>
+            ) : null}
             <div className="relative mt-2">
               <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search products" className="pl-8" />
