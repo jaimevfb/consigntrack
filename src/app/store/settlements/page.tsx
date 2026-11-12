@@ -1,13 +1,11 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { GenerateSettlementForm, type AgreementOption } from "@/components/generate-settlement-form";
-import { SettlementStatusPill, StatusPill } from "@/components/status-pill";
-import { SettlementPayDialog } from "@/components/settlement-pay-dialog";
-import { PaymentReceipt } from "@/components/payment-receipt";
-import { SettlementStatementButton, type SettlementStatement } from "@/components/settlement-statement";
+import { StoreSettlementRow } from "@/components/store-settlement-row";
+import type { SettlementStatement } from "@/components/settlement-statement";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatPHP, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
 export const metadata = { title: "Partners & Settlements" };
 
@@ -104,30 +102,17 @@ export default async function StorePartnersSettlementsPage() {
                   const paid = (s.payments ?? []).reduce((a, p) => a + Number(p.amount ?? 0), 0);
                   const remaining = Math.max(0, Math.round((s.net_payable - paid) * 100) / 100);
                   return (
-                    <TableRow key={s.id}>
-                      <TableCell className="whitespace-nowrap">
-                        <div className="text-sm font-medium">{formatDate(s.period_start)} – {formatDate(s.period_end)}</div>
-                        <div className="text-xs text-muted-foreground">{s.agreements?.consignors?.name ?? "—"}</div>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-right">
-                        <div className="tnum font-semibold">{formatPHP(s.net_payable)}</div>
-                        {s.status === "partial"
-                          ? <div className="tnum text-xs text-warn-foreground">{formatPHP(paid)} paid · {formatPHP(remaining)} due</div>
-                          : <div className="tnum text-xs text-muted-foreground">{formatPHP(s.gross_sales)} gross · −{formatPHP(s.commission)} comm</div>}
-                      </TableCell>
-                      <TableCell><SettlementStatusPill status={s.status} /></TableCell>
-                      <TableCell><PaymentReceipt method={payment?.method ?? null} reference={payment?.reference ?? null} /></TableCell>
-                      <TableCell className="text-right">
-                        <div className="inline-flex items-center justify-end gap-1">
-                          <SettlementStatementButton statement={toStatement(s)} />
-                          {s.status === "pending" || s.status === "partial" ? (
-                            <SettlementPayDialog settlementId={s.id} amount={s.net_payable} remaining={remaining} consignorName={s.agreements?.consignors?.name ?? "the consignor"} />
-                          ) : s.status === "paid" && !payment?.confirmed_at ? (
-                            <span className="whitespace-nowrap text-xs text-muted-foreground">Awaiting consignor</span>
-                          ) : <StatusPill tone="ok">Settled</StatusPill>}
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    <StoreSettlementRow key={s.id} data={{
+                      id: s.id,
+                      consignorName: s.agreements?.consignors?.name ?? "the consignor",
+                      periodStart: s.period_start, periodEnd: s.period_end,
+                      net: s.net_payable, gross: s.gross_sales, commission: s.commission,
+                      commissionPct: s.agreements?.commission_pct ?? 0,
+                      returnsTotal: s.returns_total, damageTotal: s.damage_total,
+                      paid, remaining, status: s.status,
+                      payment: { method: payment?.method ?? null, reference: payment?.reference ?? null, confirmed_at: payment?.confirmed_at ?? null },
+                      statement: toStatement(s),
+                    }} />
                   );
                 })}
                 {rows.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground">No settlements yet. Generate one for a period.</TableCell></TableRow> : null}
