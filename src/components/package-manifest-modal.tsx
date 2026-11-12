@@ -34,7 +34,10 @@ export function PackageManifestModal({ pkg, onClose, onDone }: { pkg: AwaitingPa
     const lines: ReceiveLine[] = pkg.lines.map((l) => {
       if (ok[l.line_id]) return { line_id: l.line_id, qty_received: l.qty_expected, qty_disputed: 0 };
       const miss = Math.max(0, Math.min(short[l.line_id] ?? 0, l.qty_expected));
-      return { line_id: l.line_id, qty_received: l.qty_expected - miss, qty_disputed: miss, photo: photo.trim() || null };
+      // Receive the full quantity that arrived; the disputed units are held via
+      // DISPUTE_HOLD (one subtraction). Sending expected-miss here would subtract
+      // the disputed units twice (RECEIVE short AND the hold). [DEL-06]
+      return { line_id: l.line_id, qty_received: l.qty_expected, qty_disputed: miss, photo: photo.trim() || null };
     });
     const res = await receivePackage(pkg.id, lines);
     setBusy(false);

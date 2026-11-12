@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { getStoreInventory, getStorePackages } from "@/lib/ledger-data";
 import { ReturnBuilder, type ReturnConsignor, type ReturnPkg } from "@/components/return-builder";
@@ -6,6 +7,7 @@ export const metadata = { title: "Returns" };
 
 export default async function StoreReturnsPage() {
   const { profile } = await requireProfile();
+  if (profile.role === "store_staff") redirect("/store"); // [ACC-07] managers only
   if (!profile.store_id) return <p className="text-sm text-muted-foreground">No store scope.</p>;
 
   const [inv, pkgs] = await Promise.all([

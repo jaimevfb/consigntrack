@@ -21,7 +21,9 @@ function monthRange() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  // Format from LOCAL Y-M-D, not toISOString() (UTC) — otherwise a UTC+8 browser
+  // shifts the 1st/last back a day (e.g. Nov shows as 31 Oct – 29 Nov). [RPT-04]
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   return { start: iso(start), end: iso(end) };
 }
 

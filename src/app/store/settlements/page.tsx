@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { GenerateSettlementForm, type AgreementOption } from "@/components/generate-settlement-form";
@@ -11,6 +12,7 @@ export const metadata = { title: "Partners & Settlements" };
 
 export default async function StorePartnersSettlementsPage() {
   const { profile } = await requireProfile();
+  if (profile.role === "store_staff") redirect("/store"); // [ACC-06] managers only
   if (!profile.store_id) return <p className="text-sm text-muted-foreground">No store scope.</p>;
   const supabase = createClient();
 
