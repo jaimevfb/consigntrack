@@ -37,7 +37,7 @@ function payload(d: z.infer<z.ZodObject<typeof baseShape>>) {
   };
 }
 
-export async function createProduct(input: unknown): Promise<ActionResult> {
+export async function createProduct(input: unknown): Promise<ActionResult & { productId?: string; serials?: string[] }> {
   const parsed = z.object(baseShape).safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid product" };
   const session = await getSessionProfile();
@@ -58,15 +58,18 @@ export async function createProduct(input: unknown): Promise<ActionResult> {
     .single();
   if (error) return { ok: false, error: error.message };
 
-  // Optional opening stock → warehouse intake (ledger-backed), so the product
-  // starts with real on-hand instead of zero.
+  // Optional opening stock → warehouse intake (ledger-backed) + issue one
+  // serialized barcode per piece, so the product starts labeled and ready to scan.
   const opening = parsed.data.opening_stock ?? 0;
+  let serials: string[] = [];
   if (created?.id && opening > 0) {
     const { error: whErr } = await supabase.rpc("warehouse_intake", { p_sku: created.id, p_qty: opening, p_note: "Opening stock" });
     if (whErr) return { ok: false, error: `Product saved, but opening stock failed: ${whErr.message}` };
+    const { data: minted } = await supabase.rpc("mint_units", { p_sku: created.id, p_qty: opening });
+    serials = Array.isArray(minted) ? minted.map((r: unknown) => (typeof r === "string" ? r : (r as { mint_units?: string })?.mint_units ?? "")).filter(Boolean) : [];
   }
   revalidatePath("/consignor/products");
-  return { ok: true };
+  return { ok: true, productId: created?.id, serials };
 }
 
 /** Mint N serialized piece-barcodes for a product; returns the new serials. */

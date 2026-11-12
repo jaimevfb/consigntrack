@@ -28,41 +28,52 @@ function toPayload(d: Draft) {
   return { name: d.name, category: resolveCategory(d), variant: d.variant || undefined, unit_of_measure: d.unit, unit_price: Number(d.price) || 0, cost: d.cost ? Number(d.cost) : undefined, photo_url: d.photo_url || undefined, description: d.description || undefined, opening_stock: d.opening ? Number(d.opening) : undefined };
 }
 
-type PieceTally = { labeled: number; inStock: number; sold: number };
-
-export function ProductCatalog({ products, stock = {}, pieces = {} }: { products: Product[]; stock?: Record<string, number>; pieces?: Record<string, PieceTally> }) {
+export function ProductCatalog({ products, stock = {} }: { products: Product[]; stock?: Record<string, number> }) {
   const router = useRouter();
   const [adding, setAdding] = React.useState(false);
   const [draft, setDraft] = React.useState<Draft>(EMPTY);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [editId, setEditId] = React.useState<string | null>(null);
+  const [newLabels, setNewLabels] = React.useState<{ name: string; serials: string[] } | null>(null);
   const set = (k: keyof Draft, v: string) => setDraft((d) => ({ ...d, [k]: v }));
 
   async function add(e: React.FormEvent, another: boolean) {
     e.preventDefault();
     setError(null); setBusy(true);
+    const name = draft.name;
     const res = await createProduct(toPayload(draft));
     setBusy(false);
     if (!res.ok) return setError(res.error);
-    // "Add another like this" keeps category/unit/price; clears name/variant.
-    setDraft(another ? { ...draft, name: "", variant: "", photo_url: "", description: "" } : EMPTY);
-    if (!another) setAdding(false);
-    router.refresh();
+    const serials = res.serials ?? [];
+    if (another) {
+      // keep category/unit/price; clear the per-item fields
+      setDraft({ ...draft, name: "", variant: "", photo_url: "", description: "", opening: "" });
+      router.refresh();
+      return;
+    }
+    setAdding(false); setDraft(EMPTY); router.refresh();
+    // opening stock just issued one barcode per piece → offer to print them
+    if (serials.length > 0) setNewLabels({ name, serials });
   }
 
   const visible = products.filter((p) => p.status !== "archived");
 
   return (
     <div className="space-y-4">
+      <Button onClick={() => { setError(null); setDraft(EMPTY); setAdding(true); }}><Plus className="h-4 w-4" /> New product</Button>
+
       {adding ? (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">New product</CardTitle>
-            <p className="text-xs text-muted-foreground">A unique SKU is issued automatically. Use <strong>Save &amp; add another</strong> to enter colorways fast.</p>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={(e) => add(e, false)} className="grid grid-cols-1 gap-4 sm:grid-cols-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => { setAdding(false); setDraft(EMPTY); setError(null); }}>
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-card p-6 shadow-pop" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-base font-semibold">New product</h3>
+                <p className="mt-0.5 text-xs text-muted-foreground">A unique SKU is issued automatically. Opening stock also issues one barcode per piece.</p>
+              </div>
+              <button onClick={() => { setAdding(false); setDraft(EMPTY); setError(null); }} aria-label="Close"><X className="h-4 w-4 text-muted-foreground" /></button>
+            </div>
+            <form onSubmit={(e) => add(e, false)} className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-6">
               <Field className="sm:col-span-3" label="Name"><Input value={draft.name} onChange={(e) => set("name", e.target.value)} required /></Field>
               <Field className="sm:col-span-2" label="Category">
                 <Select value={draft.category} onValueChange={(v) => set("category", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
@@ -77,24 +88,22 @@ export function ProductCatalog({ products, stock = {}, pieces = {} }: { products
               <Field className="sm:col-span-4" label="Photo URL"><Input value={draft.photo_url} onChange={(e) => set("photo_url", e.target.value)} placeholder="https://…" /></Field>
               <Field className="sm:col-span-6" label="Description"><Input value={draft.description} onChange={(e) => set("description", e.target.value)} /></Field>
               {error ? <p className="sm:col-span-6 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
-              <div className="sm:col-span-6 flex flex-wrap gap-2">
+              <div className="sm:col-span-6 flex flex-wrap gap-2 border-t border-border pt-4">
                 <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Add product"}</Button>
                 <Button type="button" variant="outline" disabled={busy} onClick={(e) => add(e, true)}><Copy className="h-4 w-4" /> Save &amp; add another</Button>
                 <Button type="button" variant="ghost" onClick={() => { setAdding(false); setDraft(EMPTY); }}>Cancel</Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
-      ) : (
-        <Button onClick={() => setAdding(true)}><Plus className="h-4 w-4" /> New product</Button>
-      )}
+          </div>
+        </div>
+      ) : null}
 
       <Card>
         <CardContent className="pt-5">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Category</TableHead><TableHead>Unit</TableHead><TableHead>In warehouse</TableHead><TableHead>Barcodes</TableHead><TableHead className="text-right">Price</TableHead><TableHead className="w-10" /></TableRow>
+                <TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Category</TableHead><TableHead>Unit</TableHead><TableHead>In warehouse</TableHead><TableHead className="text-right">Price</TableHead><TableHead className="w-10" /></TableRow>
               </TableHeader>
               <TableBody>
                 {visible.map((p) => (
@@ -107,12 +116,11 @@ export function ProductCatalog({ products, stock = {}, pieces = {} }: { products
                     <TableCell><StatusPill tone="neutral">{p.category}</StatusPill></TableCell>
                     <TableCell className="text-sm text-muted-foreground">{unitShort(p.unit_of_measure)}</TableCell>
                     <TableCell><StockCell product={p} onHand={stock[p.id] ?? 0} /></TableCell>
-                    <TableCell><BarcodeCell tally={pieces[p.id]} onHand={stock[p.id] ?? 0} /></TableCell>
                     <TableCell className="tnum text-right">{formatPHP(p.unit_price)}</TableCell>
                     <TableCell className="text-right"><Pencil className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" /></TableCell>
                   </TableRow>
                 ))}
-                {visible.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground">No products yet.</TableCell></TableRow> : null}
+                {visible.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground">No products yet.</TableCell></TableRow> : null}
               </TableBody>
             </Table>
           </div>
@@ -123,27 +131,14 @@ export function ProductCatalog({ products, stock = {}, pieces = {} }: { products
         const ep = products.find((p) => p.id === editId);
         return ep ? <ProductEditModal product={ep} onHand={stock[editId] ?? 0} onClose={() => setEditId(null)} onDone={() => { setEditId(null); router.refresh(); }} /> : null;
       })() : null}
+
+      {newLabels ? <LabelSheet name={newLabels.name} serials={newLabels.serials} onClose={() => setNewLabels(null)} /> : null}
     </div>
   );
 }
 
 function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return <div className={`space-y-1.5 ${className ?? ""}`}><Label>{label}</Label>{children}</div>;
-}
-
-/** Per-product barcode status. Issue/print happens inside the Edit card. */
-function BarcodeCell({ tally, onHand }: { tally?: PieceTally; onHand: number }) {
-  if (!tally || tally.labeled === 0) {
-    return <span className="text-xs text-muted-foreground">{onHand > 0 ? "Not issued" : "—"}</span>;
-  }
-  const unlabeled = onHand - tally.inStock; // in-warehouse stock without a barcode yet
-  return (
-    <div className="flex items-center gap-2 text-xs">
-      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary"><BarcodeIcon className="h-3 w-3" /> {tally.labeled} issued</span>
-      {tally.sold > 0 ? <span className="text-muted-foreground">{tally.sold} sold</span> : null}
-      {unlabeled > 0 ? <span className="text-warn-foreground">{unlabeled} unlabeled</span> : null}
-    </div>
-  );
 }
 
 /** Warehouse on-hand, display only. Stock is added from the Edit modal. */
