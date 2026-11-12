@@ -20,22 +20,31 @@ export async function getStoreSales(storeId: string, limit = 25): Promise<SaleRe
     qty: number; unit_price: number | null; price_flag: boolean | null; reason: string | null; created_at: string;
     products: { sku: string; name: string; unit_price: number | null } | null;
   }>;
-  const sales = new Map<string, SaleRecord>();
+  // Reconstruct carts: new checkouts post every line in one transaction (identical
+  // created_at); older per-piece checkouts land within ~1s. Rows arrive newest-first,
+  // so start a new cart whenever the gap to the previous row exceeds the window.
+  const WINDOW_MS = 2500;
+  const sales: SaleRecord[] = [];
+  let prevAt = Number.NaN;
   for (const r of rows) {
-    const key = r.created_at; // lines of one checkout share the transaction timestamp
+    const t = new Date(r.created_at).getTime();
     const qty = -r.qty; // SALE qty is stored negative
     const price = r.unit_price ?? r.products?.unit_price ?? 0; // fall back to catalog price
     const sku = r.products?.sku ?? "—";
     const name = r.products?.name ?? "—";
-    const s = sales.get(key) ?? { at: r.created_at, source: r.reason, units: 0, total: 0, flagged: false, lines: [] };
+    let s = sales[sales.length - 1];
+    if (!s || Math.abs(prevAt - t) > WINDOW_MS) {
+      s = { at: r.created_at, source: r.reason, units: 0, total: 0, flagged: false, lines: [] };
+      sales.push(s);
+    }
     // merge repeated pieces of the same product into one "Name ×N" breakdown line
     const existing = s.lines.find((l) => l.sku === sku && l.unit_price === price);
     if (existing) { existing.qty += qty; existing.total += qty * price; }
     else s.lines.push({ name, sku, qty, unit_price: price, total: qty * price });
     s.units += qty; s.total += qty * price; s.flagged = s.flagged || !!r.price_flag;
-    sales.set(key, s);
+    prevAt = t;
   }
-  return [...sales.values()].slice(0, limit);
+  return sales.slice(0, limit);
 }
 
 /** One inventory row for a store: on-hand + in-dispute, with catalog + terms. */
