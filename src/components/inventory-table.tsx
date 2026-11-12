@@ -5,7 +5,6 @@ import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { StatusPill } from "@/components/status-pill";
 import { CustodyBar } from "@/components/custody-bar";
 import { Input } from "@/components/ui/input";
-import { ProductQrButton } from "@/components/product-qr-button";
 import { formatPHP, formatNumber } from "@/lib/utils";
 import { unitLabel } from "@/lib/units";
 
@@ -145,9 +144,6 @@ export function InventoryTable({ rows }: { rows: InvRow[] }) {
                               <dt className="text-muted-foreground">Store commission</dt><dd className="tnum text-right">{r.commission_pct}%</dd>
                               <dt className="text-muted-foreground">Sold last 30 days</dt><dd className="tnum text-right">{formatNumber(r.sold)}</dd>
                             </dl>
-                            <div className="mt-3" onClick={(e) => e.stopPropagation()}>
-                              <ProductQrButton sku={r.sku} name={r.name} variant="button" />
-                            </div>
                           </div>
                         </div>
                       </td>

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Check, X, Copy, Trash2, PackagePlus } from "lucide-react";
+import { Plus, Pencil, X, Copy, Trash2, PackagePlus } from "lucide-react";
 import { createProduct, updateProduct, removeProduct, receiveStock } from "@/app/_actions/catalog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StatusPill } from "@/components/status-pill";
 import { formatPHP } from "@/lib/utils";
 import { UNITS, unitShort } from "@/lib/units";
-import { ProductQrButton } from "@/components/product-qr-button";
 import type { Product } from "@/lib/types";
 
 const CATEGORIES = ["Weaves", "Apparel", "Jewelry", "Bags", "Accessories", "Home", "Ceramics", "Woodwork", "Food", "Beverages", "Beauty", "Wellness", "Stationery", "Crafts", "Art", "Toys", "Other"];
@@ -80,7 +79,7 @@ export function ProductCatalog({ products, stock = {} }: { products: Product[]; 
                 <Select value={draft.unit} onValueChange={(v) => set("unit", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{UNITS.map((u) => <SelectItem key={u.key} value={u.key}>{u.label} ({u.short})</SelectItem>)}</SelectContent></Select>
               </Field>
               <Field className="sm:col-span-2" label="Price (₱)"><Input type="number" inputMode="decimal" value={draft.price} onChange={(e) => set("price", e.target.value)} required /></Field>
-              <Field className="sm:col-span-2" label="Opening stock"><Input type="number" inputMode="numeric" min={0} value={draft.opening} onChange={(e) => set("opening", e.target.value)} placeholder="0" /></Field>
+              <Field className="sm:col-span-2" label="Opening stock"><Input type="number" inputMode="numeric" min={0} value={draft.opening} onChange={(e) => set("opening", e.target.value)} placeholder="e.g. 50" /></Field>
               <Field className="sm:col-span-4" label="Photo URL"><Input value={draft.photo_url} onChange={(e) => set("photo_url", e.target.value)} placeholder="https://…" /></Field>
               <Field className="sm:col-span-6" label="Description"><Input value={draft.description} onChange={(e) => set("description", e.target.value)} /></Field>
               {error ? <p className="sm:col-span-6 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
@@ -104,49 +103,44 @@ export function ProductCatalog({ products, stock = {} }: { products: Product[]; 
                 <TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Category</TableHead><TableHead>Unit</TableHead><TableHead>In warehouse</TableHead><TableHead className="text-right">Price</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
               </TableHeader>
               <TableBody>
-                {visible.map((p) =>
-                  editId === p.id ? (
-                    <EditRow key={p.id} product={p} onDone={() => { setEditId(null); router.refresh(); }} onCancel={() => setEditId(null)} />
-                  ) : (
-                    <TableRow key={p.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2.5">
-                          {p.photo_url ? <img src={p.photo_url} alt="" className="h-9 w-9 rounded-md border border-border object-cover" /> : null}
-                          <div>
-                            <div className="font-medium">{p.name}{p.variant ? <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{p.variant}</span> : null}</div>
-                            {p.perishable ? <div className="text-xs text-warn-foreground">Perishable · {p.shelf_life_days}d</div> : null}
-                          </div>
+                {visible.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell>
+                      <div className="font-medium">{p.name}{p.variant ? <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{p.variant}</span> : null}</div>
+                      {p.perishable ? <div className="text-xs text-warn-foreground">Perishable · {p.shelf_life_days}d</div> : null}
+                    </TableCell>
+                    <TableCell className="tnum text-xs text-muted-foreground">{p.sku}</TableCell>
+                    <TableCell><StatusPill tone="neutral">{p.category}</StatusPill></TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{unitShort(p.unit_of_measure)}</TableCell>
+                    <TableCell><StockCell product={p} onHand={stock[p.id] ?? 0} /></TableCell>
+                    <TableCell className="tnum text-right">{formatPHP(p.unit_price)}</TableCell>
+                    <TableCell className="text-right">
+                      {confirmId === p.id ? (
+                        <div className="inline-flex items-center justify-end gap-1">
+                          <span className="text-xs text-muted-foreground">Remove?</span>
+                          <Button variant="ghost" size="sm" className="text-destructive" disabled={removingId === p.id} onClick={() => remove(p.id)}>{removingId === p.id ? "Removing…" : "Yes"}</Button>
+                          <Button variant="ghost" size="sm" onClick={() => setConfirmId(null)}>No</Button>
                         </div>
-                      </TableCell>
-                      <TableCell className="tnum text-xs text-muted-foreground">{p.sku}</TableCell>
-                      <TableCell><StatusPill tone="neutral">{p.category}</StatusPill></TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{unitShort(p.unit_of_measure)}</TableCell>
-                      <TableCell><StockCell product={p} onHand={stock[p.id] ?? 0} onDone={() => router.refresh()} /></TableCell>
-                      <TableCell className="tnum text-right">{formatPHP(p.unit_price)}</TableCell>
-                      <TableCell className="text-right">
-                        {confirmId === p.id ? (
-                          <div className="inline-flex items-center justify-end gap-1">
-                            <span className="text-xs text-muted-foreground">Remove?</span>
-                            <Button variant="ghost" size="sm" className="text-destructive" disabled={removingId === p.id} onClick={() => remove(p.id)}>{removingId === p.id ? "Removing…" : "Yes"}</Button>
-                            <Button variant="ghost" size="sm" onClick={() => setConfirmId(null)}>No</Button>
-                          </div>
-                        ) : (
-                          <div className="inline-flex items-center justify-end gap-1">
-                            {p.sku ? <ProductQrButton sku={p.sku} name={p.name} /> : null}
-                            <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => setEditId(p.id)}><Pencil className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" aria-label="Remove" onClick={() => { setError(null); setConfirmId(p.id); }}><Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" /></Button>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ),
-                )}
+                      ) : (
+                        <div className="inline-flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => setEditId(p.id)}><Pencil className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" aria-label="Remove" onClick={() => { setError(null); setConfirmId(p.id); }}><Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" /></Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
                 {visible.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground">No products yet.</TableCell></TableRow> : null}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
+
+      {editId ? (() => {
+        const ep = products.find((p) => p.id === editId);
+        return ep ? <ProductEditModal product={ep} onHand={stock[editId] ?? 0} onClose={() => setEditId(null)} onDone={() => { setEditId(null); router.refresh(); }} /> : null;
+      })() : null}
     </div>
   );
 }
@@ -155,67 +149,84 @@ function Field({ label, children, className }: { label: string; children: React.
   return <div className={`space-y-1.5 ${className ?? ""}`}><Label>{label}</Label>{children}</div>;
 }
 
-function StockCell({ product, onHand, onDone }: { product: Product; onHand: number; onDone: () => void }) {
-  const [adding, setAdding] = React.useState(false);
-  const [qty, setQty] = React.useState("");
-  const [busy, setBusy] = React.useState(false);
-  const [err, setErr] = React.useState<string | null>(null);
-
-  async function submit() {
-    const n = Number(qty);
-    if (!Number.isFinite(n) || n <= 0) { setErr("Enter a quantity"); return; }
-    setBusy(true); setErr(null);
-    const res = await receiveStock({ sku_id: product.id, qty: n });
-    setBusy(false);
-    if (!res.ok) { setErr(res.error); return; }
-    setQty(""); setAdding(false); onDone();
-  }
-
-  if (adding) {
-    return (
-      <div className="flex items-center gap-1">
-        <Input type="number" inputMode="numeric" min={1} autoFocus value={qty} onChange={(e) => setQty(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") setAdding(false); }}
-          placeholder="Qty" className="h-8 w-20 tnum" />
-        <Button size="icon" variant="ghost" aria-label="Confirm add stock" disabled={busy} onClick={submit}><Check className="h-4 w-4 text-primary" /></Button>
-        <Button size="icon" variant="ghost" aria-label="Cancel" onClick={() => { setAdding(false); setErr(null); }}><X className="h-4 w-4" /></Button>
-        {err ? <span className="text-xs text-destructive">{err}</span> : null}
-      </div>
-    );
-  }
+/** Warehouse on-hand, display only. Stock is added from the Edit modal. */
+function StockCell({ product, onHand }: { product: Product; onHand: number }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-baseline gap-1.5">
       <span className={`tnum text-sm font-medium ${onHand <= 0 ? "text-muted-foreground" : ""}`}>{onHand.toLocaleString("en-PH")}</span>
       <span className="text-xs text-muted-foreground">{unitShort(product.unit_of_measure)}</span>
-      <Button size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs" onClick={() => setAdding(true)}><PackagePlus className="h-3.5 w-3.5" /> Add</Button>
     </div>
   );
 }
 
-function EditRow({ product, onDone, onCancel }: { product: Product; onDone: () => void; onCancel: () => void }) {
+function ProductEditModal({ product, onHand, onClose, onDone }: { product: Product; onHand: number; onClose: () => void; onDone: () => void }) {
   const [name, setName] = React.useState(product.name);
   const [category, setCategory] = React.useState(product.category);
+  const [variant, setVariant] = React.useState(product.variant ?? "");
+  const [unit, setUnit] = React.useState(product.unit_of_measure);
   const [price, setPrice] = React.useState(String(product.unit_price));
+  const [addQty, setAddQty] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
+  const [stockMsg, setStockMsg] = React.useState<string | null>(null);
+  const [onHandLocal, setOnHandLocal] = React.useState(onHand);
 
   async function save() {
     setBusy(true); setErr(null);
-    const res = await updateProduct({ id: product.id, name, category, variant: product.variant ?? undefined, unit_of_measure: product.unit_of_measure, unit_price: Number(price) || 0, cost: product.cost ?? undefined, photo_url: product.photo_url ?? undefined, description: product.description ?? undefined });
+    const res = await updateProduct({ id: product.id, name, category, variant: variant || undefined, unit_of_measure: unit, unit_price: Number(price) || 0, cost: product.cost ?? undefined, photo_url: product.photo_url ?? undefined, description: product.description ?? undefined });
     setBusy(false);
     if (!res.ok) return setErr(res.error);
     onDone();
   }
 
+  async function addStock() {
+    const n = Number(addQty);
+    if (!Number.isFinite(n) || n <= 0) { setStockMsg("Enter a quantity to add."); return; }
+    setBusy(true); setStockMsg(null);
+    const res = await receiveStock({ sku_id: product.id, qty: n });
+    setBusy(false);
+    if (!res.ok) { setStockMsg(res.error); return; }
+    const next = res.onHand ?? onHandLocal + n;
+    setOnHandLocal(next); setAddQty(""); setStockMsg(`Added ${n}. Now ${next.toLocaleString("en-PH")} on hand.`);
+  }
+
   return (
-    <TableRow>
-      <TableCell><Input value={name} onChange={(e) => setName(e.target.value)} className="h-8" /></TableCell>
-      <TableCell className="tnum text-xs text-muted-foreground">{product.sku}</TableCell>
-      <TableCell><div className="w-32"><Select value={category} onValueChange={setCategory}><SelectTrigger className="h-8"><SelectValue /></SelectTrigger><SelectContent>{(CATEGORIES.includes(category) ? CATEGORIES : [category, ...CATEGORIES]).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div></TableCell>
-      <TableCell className="text-sm text-muted-foreground">{unitShort(product.unit_of_measure)}</TableCell>
-      <TableCell className="text-xs text-muted-foreground">—</TableCell>
-      <TableCell className="text-right"><Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="h-8 w-24 text-right tnum" />{err ? <div className="text-xs text-destructive">{err}</div> : null}</TableCell>
-      <TableCell className="text-right"><div className="inline-flex gap-1"><Button variant="ghost" size="icon" aria-label="Save" disabled={busy} onClick={save}><Check className="h-4 w-4" /></Button><Button variant="ghost" size="icon" aria-label="Cancel" onClick={onCancel}><X className="h-4 w-4" /></Button></div></TableCell>
-    </TableRow>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-card p-6 shadow-pop" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-base font-semibold">Edit product</h3>
+            <div className="tnum mt-0.5 text-xs text-muted-foreground">{product.sku}</div>
+          </div>
+          <button onClick={onClose} aria-label="Close"><X className="h-4 w-4 text-muted-foreground" /></button>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-6">
+          <Field className="sm:col-span-4" label="Name"><Input value={name} onChange={(e) => setName(e.target.value)} /></Field>
+          <Field className="sm:col-span-2" label="Variant"><Input value={variant} onChange={(e) => setVariant(e.target.value)} placeholder="e.g. Red" /></Field>
+          <Field className="sm:col-span-3" label="Category"><Select value={category} onValueChange={setCategory}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{(CATEGORIES.includes(category) ? CATEGORIES : [category, ...CATEGORIES]).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></Field>
+          <Field className="sm:col-span-1" label="Unit"><Select value={unit} onValueChange={setUnit}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{UNITS.map((u) => <SelectItem key={u.key} value={u.key}>{u.short}</SelectItem>)}</SelectContent></Select></Field>
+          <Field className="sm:col-span-2" label="Price (₱)"><Input type="number" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} /></Field>
+        </div>
+        {err ? <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{err}</p> : null}
+
+        <div className="mt-5 rounded-xl border border-border p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium">In warehouse</div>
+            <div className="tnum text-sm"><span className="font-semibold">{onHandLocal.toLocaleString("en-PH")}</span> <span className="text-muted-foreground">{unitShort(product.unit_of_measure)}</span></div>
+          </div>
+          <div className="mt-3 flex items-end gap-2">
+            <div className="flex-1 space-y-1.5"><Label>Add stock</Label><Input type="number" inputMode="numeric" min={1} value={addQty} onChange={(e) => setAddQty(e.target.value)} placeholder="Quantity to add" /></div>
+            <Button type="button" variant="outline" className="gap-1.5" disabled={busy || !addQty} onClick={addStock}><PackagePlus className="h-4 w-4" /> Add</Button>
+          </div>
+          {stockMsg ? <p className="mt-2 text-xs text-muted-foreground">{stockMsg}</p> : null}
+        </div>
+
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button disabled={busy} onClick={save}>{busy ? "Saving…" : "Save changes"}</Button>
+        </div>
+      </div>
+    </div>
   );
 }
