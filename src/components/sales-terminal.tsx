@@ -219,16 +219,16 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-4 lg:flex-row lg:items-start lg:justify-center lg:p-8">
-            <div className="mx-auto w-full max-w-md">
+          <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 overflow-y-auto p-4 lg:flex-row lg:items-start lg:p-8">
+            <div className="mx-auto w-full max-w-2xl lg:flex-1">
               <BarcodeScanner onDecode={resolveCode} />
-              <form onSubmit={onScan} className="relative mt-3">
+              <form onSubmit={onScan} className="relative mt-4">
                 <ScanLine className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input value={scan} onChange={(e) => setScan(e.target.value)} placeholder="…or type a code and press Enter" className="h-11 pl-9" />
               </form>
             </div>
 
-            <div className="w-full max-w-md lg:flex-1">
+            <div className="w-full lg:w-80 lg:shrink-0">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-medium">Scanned this session</span>
                 {scanLog.length > 0 ? <button onClick={() => setScanLog([])} className="text-xs text-muted-foreground hover:text-foreground">Clear</button> : null}

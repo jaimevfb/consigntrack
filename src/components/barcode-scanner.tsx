@@ -37,18 +37,29 @@ export function BarcodeScanner({ onDecode }: { onDecode: (code: string) => void 
         armedRef.current = false;
         await h.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 260, height: 150 } },
+          {
+            fps: 16,
+            // Wide, landscape scan box — barcodes are wide, so a tall square hurts reads.
+            qrbox: (vw: number, vh: number) => {
+              const width = Math.max(180, Math.floor(vw * 0.82));
+              const height = Math.max(120, Math.floor(Math.min(vh * 0.6, width * 0.46)));
+              return { width, height };
+            },
+            aspectRatio: 1.3333,
+            videoConstraints: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
+          },
           (decoded: string) => {
             if (!armedRef.current) return;
             armedRef.current = false; // debounce the same code
+            if (navigator.vibrate) { try { navigator.vibrate(40); } catch { /* unsupported */ } }
             cbRef.current(decoded);
-            window.setTimeout(() => { armedRef.current = true; }, 900);
+            window.setTimeout(() => { armedRef.current = true; }, 800);
           },
           () => { armedRef.current = true; },
         );
-        window.setTimeout(() => { armedRef.current = true; }, 1200);
+        window.setTimeout(() => { armedRef.current = true; }, 1000);
       } catch (e) {
-        setErr(e instanceof Error ? e.message : "Camera unavailable — type the SKU instead.");
+        setErr(e instanceof Error ? e.message : "Camera unavailable — type the code instead.");
       }
     })();
     return () => {
@@ -61,8 +72,8 @@ export function BarcodeScanner({ onDecode }: { onDecode: (code: string) => void 
 
   return (
     <div className="space-y-2">
-      <div id="sku-scanner" className="mx-auto w-full overflow-hidden rounded-xl border border-border [&_video]:rounded-xl" />
-      {err ? <p className="text-xs text-destructive">{err}</p> : <p className="text-center text-xs text-muted-foreground">Point the camera at a product QR.</p>}
+      <div id="sku-scanner" className="mx-auto w-full overflow-hidden rounded-2xl border border-border bg-black [&_img]:hidden [&_video]:w-full [&_video]:rounded-2xl" />
+      {err ? <p className="text-center text-xs text-destructive">{err}</p> : <p className="text-center text-xs text-muted-foreground">Center the barcode in the frame — it scans automatically.</p>}
     </div>
   );
 }
