@@ -85,7 +85,6 @@ export function ProductCatalog({ products, stock = {} }: { products: Product[]; 
               </Field>
               <Field className="sm:col-span-2" label="Price (₱)"><Input type="number" inputMode="decimal" value={draft.price} onChange={(e) => set("price", e.target.value)} required /></Field>
               <Field className="sm:col-span-2" label="Opening stock"><Input type="number" inputMode="numeric" min={0} value={draft.opening} onChange={(e) => set("opening", e.target.value)} placeholder="e.g. 50" /></Field>
-              <Field className="sm:col-span-4" label="Photo URL"><Input value={draft.photo_url} onChange={(e) => set("photo_url", e.target.value)} placeholder="https://…" /></Field>
               <Field className="sm:col-span-6" label="Description"><Input value={draft.description} onChange={(e) => set("description", e.target.value)} /></Field>
               {error ? <p className="sm:col-span-6 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
               <div className="sm:col-span-6 flex flex-wrap gap-2 border-t border-border pt-4">
