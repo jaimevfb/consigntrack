@@ -81,11 +81,11 @@ export async function mintPieceLabels(input: unknown): Promise<ActionResult & { 
   return { ok: true, serials };
 }
 
-/** In-stock piece serials for a product (for printing labels). */
-export async function listPieceSerials(skuId: string): Promise<string[]> {
+/** All pieces for a product with their status (for the pieces panel + labels). */
+export async function listPieces(skuId: string): Promise<{ serial: string; status: string }[]> {
   const supabase = createClient();
-  const { data } = await supabase.from("product_units").select("serial").eq("product_id", skuId).eq("status", "in_stock").order("serial");
-  return ((data ?? []) as { serial: string }[]).map((r) => r.serial);
+  const { data } = await supabase.from("product_units").select("serial, status").eq("product_id", skuId).order("serial");
+  return (data ?? []) as { serial: string; status: string }[];
 }
 
 /** Add warehouse stock for a product (ledger-backed PRODUCE entry). */

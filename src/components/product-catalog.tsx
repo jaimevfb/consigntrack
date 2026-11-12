@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, X, Copy, Trash2, PackagePlus } from "lucide-react";
-import { createProduct, updateProduct, removeProduct, receiveStock, mintPieceLabels, listPieceSerials } from "@/app/_actions/catalog";
+import { createProduct, updateProduct, removeProduct, receiveStock, mintPieceLabels, listPieces } from "@/app/_actions/catalog";
 import { LabelSheet } from "@/components/label-sheet";
 import { Barcode as BarcodeIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -150,26 +150,29 @@ function ProductEditModal({ product, onHand, onClose, onDone }: { product: Produ
   const [stockMsg, setStockMsg] = React.useState<string | null>(null);
   const [onHandLocal, setOnHandLocal] = React.useState(onHand);
   const [confirmDel, setConfirmDel] = React.useState(false);
-  const [serials, setSerials] = React.useState<string[] | null>(null);
+  const [pieces, setPieces] = React.useState<{ serial: string; status: string }[] | null>(null);
   const [labelBusy, setLabelBusy] = React.useState(false);
   const [sheetOpen, setSheetOpen] = React.useState(false);
 
+  const inStock = (pieces ?? []).filter((p) => p.status === "in_stock");
+  const soldCount = (pieces ?? []).filter((p) => p.status === "sold").length;
+
   React.useEffect(() => {
     let on = true;
-    listPieceSerials(product.id).then((s) => { if (on) setSerials(s); });
+    listPieces(product.id).then((p) => { if (on) setPieces(p); });
     return () => { on = false; };
   }, [product.id]);
 
   async function generateAndPrint() {
     setLabelBusy(true);
-    const have = serials?.length ?? 0;
-    const need = onHandLocal - have;
+    const labeled = pieces?.length ?? 0;
+    const need = onHandLocal - labeled;
     if (need > 0) {
       const res = await mintPieceLabels({ sku_id: product.id, qty: need });
       if (!res.ok) { setLabelBusy(false); setStockMsg(res.error); return; }
     }
-    const fresh = await listPieceSerials(product.id);
-    setSerials(fresh); setLabelBusy(false); setSheetOpen(true);
+    const fresh = await listPieces(product.id);
+    setPieces(fresh); setLabelBusy(false); setSheetOpen(true);
   }
 
   async function del() {
@@ -236,14 +239,25 @@ function ProductEditModal({ product, onHand, onClose, onDone }: { product: Produ
             <div>
               <div className="text-sm font-medium">Piece barcodes</div>
               <div className="text-xs text-muted-foreground">
-                {serials === null ? "Loading…" : `${serials.length} of ${onHandLocal} pieces labeled`}
+                {pieces === null ? "Loading…" : `${pieces.length} labeled · ${inStock.length} in stock · ${soldCount} sold`}
               </div>
             </div>
             <Button type="button" variant="outline" size="sm" className="gap-1.5" disabled={labelBusy || onHandLocal <= 0} onClick={generateAndPrint}>
-              <BarcodeIcon className="h-4 w-4" /> {labelBusy ? "Generating…" : "Generate & print labels"}
+              <BarcodeIcon className="h-4 w-4" /> {labelBusy ? "Generating…" : (pieces && pieces.length > 0 ? "Print labels" : "Generate & print")}
             </Button>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">One unique barcode per piece. Print the sheet, stick one on each item, and scan it at the store to sell that exact piece.</p>
+          {pieces && pieces.length > 0 ? (
+            <div className="mt-3 max-h-40 space-y-1 overflow-y-auto rounded-lg border border-border bg-muted/20 p-2">
+              {pieces.map((pc) => (
+                <div key={pc.serial} className="flex items-center justify-between gap-2 px-1 text-sm">
+                  <span className="tnum font-medium">{pc.serial}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${pc.status === "sold" ? "bg-muted text-muted-foreground" : pc.status === "in_stock" ? "bg-ok/40 text-ok-foreground" : "bg-warn/20 text-warn-foreground"}`}>{pc.status === "in_stock" ? "In stock" : pc.status === "sold" ? "Sold" : pc.status}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">One unique barcode per piece. Print the sheet, stick one on each item, and scan it at the store to sell that exact piece.</p>
+          )}
         </div>
 
         <div className="mt-6 flex items-center justify-between gap-2 border-t border-border pt-4">
@@ -262,7 +276,7 @@ function ProductEditModal({ product, onHand, onClose, onDone }: { product: Produ
           </div>
         </div>
       </div>
-      {sheetOpen ? <LabelSheet name={product.name} serials={serials ?? []} onClose={() => setSheetOpen(false)} /> : null}
+      {sheetOpen ? <LabelSheet name={product.name} serials={inStock.map((p) => p.serial)} onClose={() => setSheetOpen(false)} /> : null}
     </div>
   );
 }
