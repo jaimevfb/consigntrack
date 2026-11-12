@@ -6,6 +6,7 @@ import { Plus, Check, Pencil, X, Trash2 } from "lucide-react";
 import {
   createAgreement,
   updateAgreement,
+  terminateAgreement,
   setCommissionOverride,
   removeCommissionOverride,
 } from "@/app/_actions/agreements";
@@ -236,7 +237,10 @@ export function AgreementsManager({
                     </TableCell>
                     <TableCell><StatusPill tone={a.is_active ? "ok" : "neutral"}>{a.is_active ? "Active" : "Inactive"}</StatusPill></TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => setEditId(a.id)}><Pencil className="h-4 w-4" /></Button>
+                      <div className="inline-flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => setEditId(a.id)}><Pencil className="h-4 w-4" /></Button>
+                        {a.is_active ? <AgreementTerminateButton id={a.id} label={`${a.consignorName} → ${a.storeName}`} /> : null}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ),
@@ -260,6 +264,34 @@ function liabilityShort(a: AgreementRow) {
 }
 function eopShort(v: string) {
   return v === "return" ? "return" : v === "extend" ? "extend" : "discount";
+}
+
+function AgreementTerminateButton({ id, label }: { id: string; label: string }) {
+  const router = useRouter();
+  const [confirming, setConfirming] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+
+  async function run() {
+    setBusy(true);
+    const res = await terminateAgreement({ id });
+    setBusy(false);
+    if (!res.ok) { setConfirming(false); return; }
+    router.refresh();
+  }
+
+  if (!confirming) {
+    return (
+      <Button variant="ghost" size="sm" aria-label={`Terminate agreement ${label}`} className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setConfirming(true)}>
+        Terminate
+      </Button>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Button variant="ghost" size="sm" disabled={busy} onClick={() => setConfirming(false)}>Cancel</Button>
+      <Button variant="destructive" size="sm" disabled={busy} onClick={run}>{busy ? "…" : "Confirm"}</Button>
+    </span>
+  );
 }
 
 function EditRow({

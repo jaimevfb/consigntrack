@@ -36,6 +36,17 @@ export async function updateAgreement(input: unknown): Promise<ActionResult> {
   return { ok: true };
 }
 
+export async function terminateAgreement(input: unknown): Promise<ActionResult> {
+  const parsed = z.object({ id: z.string().uuid() }).safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+  const supabase = createClient();
+  const { error } = await supabase.from("agreements").update({ is_active: false }).eq("id", parsed.data.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/agreements");
+  revalidatePath("/admin/accounts");
+  return { ok: true };
+}
+
 const createSchema = z.object({
   consignor_id: z.string().uuid(),
   store_id: z.string().uuid(),
