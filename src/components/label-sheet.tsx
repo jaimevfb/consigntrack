@@ -12,7 +12,7 @@ export function LabelSheet({ name, serials, onClose }: { name: string; serials: 
     if (!sheet) return;
     const w = window.open("", "_blank", "width=820,height=920");
     if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>Labels — ${name}</title><style>*{font-family:Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact}body{margin:0;padding:12px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.cell{border:1px solid #e2e8f0;border-radius:8px;padding:8px;text-align:center;page-break-inside:avoid}.cell .nm{font-size:10px;font-weight:600;color:#0f172a;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}</style></head><body onload="window.print()"><div class="grid">${sheet.innerHTML}</div></body></html>`);
+    w.document.write(`<!doctype html><html><head><title>Labels — ${name}</title><style>@page{margin:14mm}*{font-family:Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;padding:20px}.grid{display:grid;grid-template-columns:repeat(3,1fr);column-gap:18px;row-gap:22px}.cell{border:1px solid #e2e8f0;border-radius:10px;padding:16px 14px;text-align:center;page-break-inside:avoid;display:flex;flex-direction:column;align-items:center;gap:8px}.cell .nm{font-size:11px;font-weight:600;color:#0f172a;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cell svg{max-width:100%;height:auto}</style></head><body onload="window.print()"><div class="grid">${sheet.innerHTML}</div></body></html>`);
     w.document.close();
   }
 
@@ -29,11 +29,11 @@ export function LabelSheet({ name, serials, onClose }: { name: string; serials: 
             <button onClick={onClose} aria-label="Close"><X className="h-4 w-4 text-muted-foreground" /></button>
           </div>
         </div>
-        <div id="label-sheet-grid" className="grid grid-cols-2 gap-3 overflow-y-auto p-4 sm:grid-cols-3">
+        <div id="label-sheet-grid" className="grid grid-cols-2 gap-5 overflow-y-auto p-6 sm:grid-cols-3">
           {serials.map((s) => (
-            <div key={s} className="cell flex flex-col items-center rounded-lg border border-border bg-white p-2">
-              <div className="nm mb-1 max-w-full truncate text-[10px] font-semibold text-[#0f172a]">{name}</div>
-              <Barcode value={s} height={44} />
+            <div key={s} className="cell flex flex-col items-center gap-2 rounded-xl border border-border bg-white p-4">
+              <div className="nm max-w-full truncate text-[11px] font-semibold text-[#0f172a]">{name}</div>
+              <Barcode value={s} height={50} />
             </div>
           ))}
           {serials.length === 0 ? <p className="col-span-full py-8 text-center text-sm text-muted-foreground">No pieces to label yet — add stock first.</p> : null}
