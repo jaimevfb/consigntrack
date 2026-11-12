@@ -40,11 +40,29 @@ export function AccountsManager({
   consignors: ConsignorOption[];
   rows: AccountRow[];
 }) {
+  const [tab, setTab] = React.useState<"consignor" | "store">("consignor");
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <ConsignorForm />
-        <StoreForm consignors={consignors} />
+      <div className="inline-flex rounded-xl border border-border bg-muted/40 p-1">
+        <button
+          type="button"
+          onClick={() => setTab("consignor")}
+          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${tab === "consignor" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <UserPlus className="h-4 w-4" /> Consignor
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("store")}
+          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${tab === "store" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <StoreIcon className="h-4 w-4" /> Store (consignee)
+        </button>
+      </div>
+
+      <div className="max-w-2xl">
+        {tab === "consignor" ? <ConsignorForm /> : <StoreForm consignors={consignors} />}
       </div>
 
       <Card>
