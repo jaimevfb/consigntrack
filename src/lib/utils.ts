@@ -23,10 +23,13 @@ export function formatNumber(value: number | string | null | undefined): string 
   return new Intl.NumberFormat("en-PH").format(Number.isFinite(n as number) ? (n as number) : 0);
 }
 
+/** The app runs on Philippine Standard Time regardless of server/browser locale. */
+export const PH_TZ = "Asia/Manila";
+
 export function formatDate(value: string | Date | null | undefined): string {
   if (!value) return "—";
   const d = typeof value === "string" ? new Date(value) : value;
-  return d.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" });
+  return d.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric", timeZone: PH_TZ });
 }
 
 export function formatDateTime(value: string | Date | null | undefined): string {
@@ -38,7 +41,23 @@ export function formatDateTime(value: string | Date | null | undefined): string 
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: PH_TZ,
   });
+}
+
+/** Manila calendar date as YYYY-MM-DD — use this to bucket timestamps by PH day. */
+export function phDateKey(value: string | Date): string {
+  const d = typeof value === "string" ? new Date(value) : value;
+  return new Intl.DateTimeFormat("en-CA", { timeZone: PH_TZ }).format(d);
+}
+
+/** Manila month/day label like "11/12". */
+export function phMonthDay(value: string | Date): string {
+  const d = typeof value === "string" ? new Date(value) : value;
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: PH_TZ, month: "numeric", day: "numeric" }).formatToParts(d);
+  const m = parts.find((p) => p.type === "month")?.value ?? "";
+  const day = parts.find((p) => p.type === "day")?.value ?? "";
+  return `${m}/${day}`;
 }
 
 /** Short, monospace-friendly id, e.g. "a1b2c3" from a uuid. */

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { phDateKey, phMonthDay } from "@/lib/utils";
 
 export interface ConsignorNetwork {
   warehouseUnits: number; warehouseValue: number;
@@ -43,7 +44,7 @@ export async function getConsignorNetwork(consignorId: string): Promise<Consigno
     const pct = commByStore.get(e.consignee_id) ?? 0;
     const netVal = gross * (1 - pct / 100);
     if (new Date(e.created_at) >= since) {
-      const k = e.created_at.slice(0, 10);
+      const k = phDateKey(e.created_at);
       netByDay.set(k, (netByDay.get(k) ?? 0) + netVal);
       net30 += netVal;
     }
@@ -51,8 +52,7 @@ export async function getConsignorNetwork(consignorId: string): Promise<Consigno
   const netSeries: { label: string; value: number }[] = [];
   for (let i = 29; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const k = d.toISOString().slice(0, 10);
-    netSeries.push({ label: `${d.getMonth() + 1}/${d.getDate()}`, value: Math.round(netByDay.get(k) ?? 0) });
+    netSeries.push({ label: phMonthDay(d), value: Math.round(netByDay.get(phDateKey(d)) ?? 0) });
   }
   // at-stores on hand per store, sold per store, grossSales
   const perStore = new Map<string, { name: string; onHand: number; sold: number }>();
@@ -136,7 +136,7 @@ export async function getConsignorInsights(consignorId: string): Promise<{ rows:
       const q = -e.qty; const amt = q * (e.unit_price ?? 0);
       sold30By.set(e.sku_id, (sold30By.get(e.sku_id) ?? 0) + q);
       byStore.set(e.stores?.name ?? "—", (byStore.get(e.stores?.name ?? "—") ?? 0) + amt);
-      byDay.set(e.created_at.slice(0, 10), (byDay.get(e.created_at.slice(0, 10)) ?? 0) + amt);
+      { const k = phDateKey(e.created_at); byDay.set(k, (byDay.get(k) ?? 0) + amt); }
       gross30 += amt;
     }
   }
@@ -146,7 +146,7 @@ export async function getConsignorInsights(consignorId: string): Promise<{ rows:
   })).sort((a, b) => b.sold30 - a.sold30);
 
   const series: { label: string; value: number }[] = [];
-  for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); const k = d.toISOString().slice(0, 10); series.push({ label: `${d.getMonth() + 1}/${d.getDate()}`, value: Math.round(byDay.get(k) ?? 0) }); }
+  for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); series.push({ label: phMonthDay(d), value: Math.round(byDay.get(phDateKey(d)) ?? 0) }); }
   return { rows, byStore: [...byStore.entries()].map(([store, gross]) => ({ store, gross: Math.round(gross) })).sort((a, b) => b.gross - a.gross), series, gross30: Math.round(gross30) };
 }
 
@@ -190,7 +190,7 @@ export async function getConsignorStoreDetail(consignorId: string, storeId: stri
       const q = -e.qty; const price = e.unit_price ?? prod.get(e.sku_id)?.unit_price ?? 0; const amt = q * price;
       soldUnits += q; grossSales += amt;
       const s = soldBySku.get(e.sku_id) ?? { sold: 0, gross: 0 }; s.sold += q; s.gross += amt; soldBySku.set(e.sku_id, s);
-      if (new Date(e.created_at) >= since) netByDay.set(e.created_at.slice(0, 10), (netByDay.get(e.created_at.slice(0, 10)) ?? 0) + amt * (1 - pct / 100));
+      if (new Date(e.created_at) >= since) { const k = phDateKey(e.created_at); netByDay.set(k, (netByDay.get(k) ?? 0) + amt * (1 - pct / 100)); }
     }
     if (e.entry_type === "RETURN_OUT") returnedUnits += -e.qty;
   }
@@ -200,7 +200,7 @@ export async function getConsignorStoreDetail(consignorId: string, storeId: stri
   const netEarned = grossSales * (1 - pct / 100);
 
   const netSeries: { label: string; value: number }[] = [];
-  for (let i = 29; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); const k = d.toISOString().slice(0, 10); netSeries.push({ label: `${d.getMonth() + 1}/${d.getDate()}`, value: Math.round(netByDay.get(k) ?? 0) }); }
+  for (let i = 29; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); netSeries.push({ label: phMonthDay(d), value: Math.round(netByDay.get(phDateKey(d)) ?? 0) }); }
 
   const topProducts = [...soldBySku.entries()].map(([sku, s]) => ({ name: prod.get(sku)?.name ?? "—", sku: prod.get(sku)?.sku ?? "—", sold: s.sold, gross: Math.round(s.gross) })).sort((x, y) => y.gross - x.gross).slice(0, 6);
 

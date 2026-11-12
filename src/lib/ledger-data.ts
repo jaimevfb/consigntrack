@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { phDateKey, phMonthDay } from "@/lib/utils";
 
 export interface SaleRecord {
   at: string; source: string | null; units: number; total: number; flagged: boolean;
@@ -185,7 +186,7 @@ export async function getStoreSalesAnalytics(storeId: string): Promise<StoreSale
     const amt = q * (r.unit_price ?? 0);
     gross30 += amt; units30 += q;
     commission30 += amt * ((commRate.get(r.products?.consignor_id ?? "") ?? 0) / 100);
-    const day = r.created_at.slice(0, 10);
+    const day = phDateKey(r.created_at);
     byDay.set(day, (byDay.get(day) ?? 0) + amt);
     const key = r.sku_id;
     const cur = bySku.get(key) ?? { sku: r.products?.sku ?? "—", name: r.products?.name ?? "—", qty: 0, gross: 0 };
@@ -196,8 +197,7 @@ export async function getStoreSalesAnalytics(storeId: string): Promise<StoreSale
   const series: { label: string; value: number }[] = [];
   for (let i = 13; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    series.push({ label: `${d.getMonth() + 1}/${d.getDate()}`, value: Math.round(byDay.get(key) ?? 0) });
+    series.push({ label: phMonthDay(d), value: Math.round(byDay.get(phDateKey(d)) ?? 0) });
   }
   const topSkus = [...bySku.values()].filter((s) => s.qty > 0).sort((a, b) => b.gross - a.gross).slice(0, 5);
   return { gross30: Math.round(gross30), units30, commission30: Math.round(commission30), series, topSkus };

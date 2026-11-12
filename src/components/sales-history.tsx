@@ -4,7 +4,7 @@ import * as React from "react";
 import { Receipt, AlertTriangle, ScanLine, Pencil, FileUp, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { SaleRecord } from "@/lib/ledger-data";
-import { formatPHP, formatDate } from "@/lib/utils";
+import { formatPHP, formatDate, phDateKey, PH_TZ } from "@/lib/utils";
 
 const SOURCE: Record<string, { label: string; icon: typeof ScanLine }> = {
   POS_SCAN: { label: "Scan", icon: ScanLine },
@@ -15,8 +15,8 @@ function source(reason: string | null) {
   const base = (reason ?? "").split(" · ")[0];
   return SOURCE[base] ?? { label: base || "Sale", icon: Receipt };
 }
-const shortTime = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toDateString();
+const shortTime = (iso: string) => new Date(iso).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit", timeZone: PH_TZ });
+const isToday = (iso: string) => phDateKey(iso) === phDateKey(new Date());
 
 export function SalesHistory({ sales }: { sales: SaleRecord[] }) {
   const [open, setOpen] = React.useState<Set<string>>(new Set());
