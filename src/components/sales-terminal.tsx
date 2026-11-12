@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ScanLine, Plus, Trash2, Check, Search, ShoppingCart, Camera, X, Zap } from "lucide-react";
+import { ScanLine, Plus, Minus, Trash2, Check, Search, ShoppingCart, Camera, X, Zap } from "lucide-react";
 import { posSale, type SaleLine } from "@/app/_actions/ledger-ops";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -164,7 +164,11 @@ export function SalesTerminal({ storeId, skus }: { storeId: string; skus: Sellab
                       <div className="truncate text-sm font-medium">{l.name}</div>
                       <div className="tnum text-xs text-muted-foreground">{formatPHP(l.unit_price)} · max {l.on_hand}</div>
                     </div>
-                    <Input type="number" min={1} max={l.on_hand} value={l.qty} onChange={(e) => setQty(l.sku_id, Number(e.target.value))} className="h-8 w-16 text-right tnum" />
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <button type="button" aria-label="Decrease" disabled={l.qty <= 1} onClick={() => setQty(l.sku_id, l.qty - 1)} className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"><Minus className="h-3.5 w-3.5" /></button>
+                      <Input type="number" min={1} max={l.on_hand} value={l.qty} onChange={(e) => setQty(l.sku_id, Number(e.target.value))} className="h-7 w-10 px-1 text-center tnum [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                      <button type="button" aria-label="Increase" disabled={l.qty >= l.on_hand} onClick={() => setQty(l.sku_id, l.qty + 1)} className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-primary transition-colors hover:bg-primary/10 disabled:opacity-40"><Plus className="h-3.5 w-3.5" /></button>
+                    </div>
                     <span className="tnum w-20 text-right text-sm font-medium">{formatPHP(l.qty * l.unit_price)}</span>
                     <button aria-label="Remove" onClick={() => remove(l.sku_id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
                   </div>

@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { Printer, PackagePlus, Check, Undo2, Truck } from "lucide-react";
+import { Printer, PackagePlus, Check, Undo2, Truck, Minus, Plus } from "lucide-react";
 import { buildReturnPackage } from "@/app/_actions/ledger-ops";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,15 +58,23 @@ export function ReturnBuilder({ storeId, consignors, existing }: { storeId: stri
             </Select>
           </div>
           <div className="divide-y divide-border rounded-xl border border-border">
-            {active && active.skus.length > 0 ? active.skus.map((s) => (
-              <div key={s.sku_id} className="flex items-center justify-between gap-3 p-3">
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">{s.name}</div>
-                  <div className="tnum text-xs text-muted-foreground">{s.sku} · {s.on_hand} on hand</div>
+            {active && active.skus.length > 0 ? active.skus.map((s) => {
+              const v = qty[s.sku_id] ?? 0;
+              const clamp = (n: number) => setQty({ ...qty, [s.sku_id]: Math.max(0, Math.min(n, s.on_hand)) });
+              return (
+                <div key={s.sku_id} className="flex items-center justify-between gap-3 p-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">{s.name}</div>
+                    <div className="tnum text-xs text-muted-foreground">{s.sku} · {s.on_hand} on hand</div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button type="button" aria-label="Decrease" disabled={v <= 0} onClick={() => clamp(v - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"><Minus className="h-4 w-4" /></button>
+                    <Input type="number" min={0} max={s.on_hand} value={v} onChange={(e) => clamp(Number(e.target.value))} className="h-8 w-14 px-1 text-center tnum [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                    <button type="button" aria-label="Increase" disabled={v >= s.on_hand} onClick={() => clamp(v + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-primary transition-colors hover:bg-primary/10 disabled:opacity-40"><Plus className="h-4 w-4" /></button>
+                  </div>
                 </div>
-                <Input type="number" min={0} max={s.on_hand} value={qty[s.sku_id] ?? 0} onChange={(e) => setQty({ ...qty, [s.sku_id]: Math.max(0, Math.min(Number(e.target.value), s.on_hand)) })} className="h-8 w-20 text-right tnum" />
-              </div>
-            )) : <p className="p-4 text-center text-sm text-muted-foreground">No on-hand stock for this consignor.</p>}
+              );
+            }) : <p className="p-4 text-center text-sm text-muted-foreground">No on-hand stock for this consignor.</p>}
           </div>
           {err ? <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{err}</p> : null}
           {done ? <p className="flex items-center gap-1.5 rounded-md bg-ok/40 px-3 py-2 text-sm text-ok-foreground"><Check className="h-4 w-4" /> Return packed — scan its QR on the right to dispatch it.</p> : null}

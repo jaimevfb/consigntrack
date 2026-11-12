@@ -52,7 +52,7 @@ export default async function StoreInventoryPage() {
 const STRIP_COLORS = {
   blue: { badge: "bg-primary/10 text-primary", value: "", border: "border-border" },
   green: { badge: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400", value: "", border: "border-border" },
-  amber: { badge: "bg-amber-500/15 text-amber-600 dark:text-amber-400", valueActive: "text-amber-600 dark:text-amber-400", borderActive: "border-amber-500/40 bg-amber-500/[0.04]" },
+  amber: { badge: "bg-warn/20 text-warn-foreground", valueActive: "text-warn-foreground", borderActive: "border-warn/40 bg-warn/[0.06]" },
   rose: { badge: "bg-rose-500/15 text-rose-600 dark:text-rose-400", valueActive: "text-rose-600 dark:text-rose-400", borderActive: "border-rose-500/40 bg-rose-500/[0.04]" },
 } as const;
 

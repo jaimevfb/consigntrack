@@ -119,7 +119,7 @@ export function InventoryTable({ rows }: { rows: InvRow[] }) {
                         </div>
                       </div>
                     </td>
-                    <td className="tnum p-3 text-right font-medium">{r.on_hand}{r.in_dispute > 0 ? <span className="ml-1 text-xs text-warn-foreground">+{r.in_dispute} disp.</span> : null}</td>
+                    <td className="p-3 text-right"><span className="tnum font-medium">{r.on_hand}</span>{r.in_dispute > 0 ? <span className="tnum ml-1.5 rounded-full bg-warn/20 px-1.5 py-0.5 text-[10px] font-semibold text-warn-foreground">+{r.in_dispute} disputed</span> : null}</td>
                     <td className="tnum p-3 text-right">{formatPHP(r.on_hand * r.unit_price)}</td>
                     <td className="p-3"><StatusPill tone={st.tone}>{st.label}</StatusPill></td>
                   </tr>
