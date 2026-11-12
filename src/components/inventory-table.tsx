@@ -127,15 +127,7 @@ export function InventoryTable({ rows }: { rows: InvRow[] }) {
                     <tr className="border-t border-border bg-muted/20">
                       <td />
                       <td colSpan={4} className="p-3">
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <div>
-                            <div className="mb-1.5 text-xs font-medium text-muted-foreground">Where the goods are</div>
-                            <CustodyBar segments={[
-                              { key: "onhand", label: "On hand", value: r.on_hand },
-                              { key: "disputed", label: "Disputed", value: r.in_dispute },
-                              { key: "sold", label: "Sold (30d)", value: r.sold },
-                            ]} />
-                          </div>
+                        <div className="grid items-center gap-4 sm:grid-cols-2">
                           <div>
                             <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
                               <dt className="text-muted-foreground">Category</dt><dd className="text-right">{r.category}</dd>
@@ -144,6 +136,14 @@ export function InventoryTable({ rows }: { rows: InvRow[] }) {
                               <dt className="text-muted-foreground">Store commission</dt><dd className="tnum text-right">{r.commission_pct}%</dd>
                               <dt className="text-muted-foreground">Sold last 30 days</dt><dd className="tnum text-right">{formatNumber(r.sold)}</dd>
                             </dl>
+                          </div>
+                          <div>
+                            <div className="mb-1.5 text-xs font-medium text-muted-foreground">Where the goods are</div>
+                            <CustodyBar segments={[
+                              { key: "onhand", label: "On hand", value: r.on_hand },
+                              { key: "disputed", label: "Disputed", value: r.in_dispute },
+                              { key: "sold", label: "Sold (30d)", value: r.sold },
+                            ]} />
                           </div>
                         </div>
                       </td>
