@@ -10,6 +10,8 @@ export type UnitKey =
   | "kilogram"
   | "gram"
   | "liter"
+  | "milliliter"
+  | "ounce"
   | "meter";
 
 export const UNITS: { key: UnitKey; label: string; short: string }[] = [
@@ -20,6 +22,8 @@ export const UNITS: { key: UnitKey; label: string; short: string }[] = [
   { key: "kilogram", label: "Kilogram", short: "kg" },
   { key: "gram", label: "Gram", short: "g" },
   { key: "liter", label: "Liter", short: "L" },
+  { key: "milliliter", label: "Milliliter", short: "mL" },
+  { key: "ounce", label: "Ounce", short: "oz" },
   { key: "meter", label: "Meter", short: "m" },
 ];
 

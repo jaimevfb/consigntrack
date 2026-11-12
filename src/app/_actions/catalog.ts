@@ -19,6 +19,7 @@ const baseShape = {
   photo_url: z.string().optional(),
   perishable: z.coerce.boolean().optional(),
   shelf_life_days: z.coerce.number().int().positive().optional(),
+  opening_stock: z.coerce.number().int().nonnegative().optional(),
 };
 
 function payload(d: z.infer<z.ZodObject<typeof baseShape>>) {
@@ -50,10 +51,41 @@ export async function createProduct(input: unknown): Promise<ActionResult> {
     return { ok: false, error: `Similar product exists (${dupe.sku}) — edit it, or add a variant to tell them apart.` };
   }
 
-  const { error } = await supabase.from("products").insert({ consignor_id: session.profile.consignor_id, ...payload(parsed.data) });
+  const { data: created, error } = await supabase
+    .from("products")
+    .insert({ consignor_id: session.profile.consignor_id, ...payload(parsed.data) })
+    .select("id")
+    .single();
   if (error) return { ok: false, error: error.message };
+
+  // Optional opening stock → warehouse intake (ledger-backed), so the product
+  // starts with real on-hand instead of zero.
+  const opening = parsed.data.opening_stock ?? 0;
+  if (created?.id && opening > 0) {
+    const { error: whErr } = await supabase.rpc("warehouse_intake", { p_sku: created.id, p_qty: opening, p_note: "Opening stock" });
+    if (whErr) return { ok: false, error: `Product saved, but opening stock failed: ${whErr.message}` };
+  }
   revalidatePath("/consignor/products");
   return { ok: true };
+}
+
+/** Add warehouse stock for a product (ledger-backed PRODUCE entry). */
+export async function receiveStock(input: unknown): Promise<ActionResult & { onHand?: number }> {
+  const parsed = z.object({
+    sku_id: z.string().uuid(),
+    qty: z.coerce.number().int().positive("Enter a quantity of at least 1"),
+    note: z.string().max(120).optional(),
+  }).safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid stock entry" };
+  const session = await getSessionProfile();
+  if (!session?.profile.consignor_id && session?.profile.role !== "admin") {
+    return { ok: false, error: "Only consignor accounts can add stock." };
+  }
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("warehouse_intake", { p_sku: parsed.data.sku_id, p_qty: parsed.data.qty, p_note: parsed.data.note ?? null });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/consignor/products");
+  return { ok: true, onHand: typeof data === "number" ? data : undefined };
 }
 
 export async function updateProduct(input: unknown): Promise<ActionResult> {

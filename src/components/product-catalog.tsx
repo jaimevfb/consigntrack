@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Check, X, Package, Copy, Trash2 } from "lucide-react";
-import { createProduct, updateProduct, removeProduct } from "@/app/_actions/catalog";
+import { Plus, Pencil, Check, X, Package, Copy, Trash2, PackagePlus } from "lucide-react";
+import { createProduct, updateProduct, removeProduct, receiveStock } from "@/app/_actions/catalog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,17 +16,17 @@ import { UNITS, unitShort } from "@/lib/units";
 import type { Product } from "@/lib/types";
 
 const CATEGORIES = ["Weaves", "Apparel", "Jewelry", "Bags", "Accessories", "Home", "Ceramics", "Woodwork", "Food", "Beverages", "Beauty", "Wellness", "Stationery", "Crafts", "Art", "Toys", "Other"];
-type Draft = { name: string; category: string; otherText: string; variant: string; unit: string; price: string; cost: string; photo_url: string; description: string };
-const EMPTY: Draft = { name: "", category: "Weaves", otherText: "", variant: "", unit: "piece", price: "", cost: "", photo_url: "", description: "" };
+type Draft = { name: string; category: string; otherText: string; variant: string; unit: string; price: string; cost: string; photo_url: string; description: string; opening: string };
+const EMPTY: Draft = { name: "", category: "Weaves", otherText: "", variant: "", unit: "piece", price: "", cost: "", photo_url: "", description: "", opening: "" };
 
 function resolveCategory(d: { category: string; otherText: string }) {
   return d.category === "Other" ? (d.otherText.trim() || "Other") : d.category;
 }
 function toPayload(d: Draft) {
-  return { name: d.name, category: resolveCategory(d), variant: d.variant || undefined, unit_of_measure: d.unit, unit_price: Number(d.price) || 0, cost: d.cost ? Number(d.cost) : undefined, photo_url: d.photo_url || undefined, description: d.description || undefined };
+  return { name: d.name, category: resolveCategory(d), variant: d.variant || undefined, unit_of_measure: d.unit, unit_price: Number(d.price) || 0, cost: d.cost ? Number(d.cost) : undefined, photo_url: d.photo_url || undefined, description: d.description || undefined, opening_stock: d.opening ? Number(d.opening) : undefined };
 }
 
-export function ProductCatalog({ products }: { products: Product[] }) {
+export function ProductCatalog({ products, stock = {} }: { products: Product[]; stock?: Record<string, number> }) {
   const router = useRouter();
   const [adding, setAdding] = React.useState(false);
   const [draft, setDraft] = React.useState<Draft>(EMPTY);
@@ -79,7 +79,8 @@ export function ProductCatalog({ products }: { products: Product[] }) {
                 <Select value={draft.unit} onValueChange={(v) => set("unit", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{UNITS.map((u) => <SelectItem key={u.key} value={u.key}>{u.label} ({u.short})</SelectItem>)}</SelectContent></Select>
               </Field>
               <Field className="sm:col-span-2" label="Price (₱)"><Input type="number" inputMode="decimal" value={draft.price} onChange={(e) => set("price", e.target.value)} required /></Field>
-              <Field className="sm:col-span-2" label="Photo URL"><Input value={draft.photo_url} onChange={(e) => set("photo_url", e.target.value)} placeholder="https://…" /></Field>
+              <Field className="sm:col-span-2" label="Opening stock"><Input type="number" inputMode="numeric" min={0} value={draft.opening} onChange={(e) => set("opening", e.target.value)} placeholder="0" /></Field>
+              <Field className="sm:col-span-4" label="Photo URL"><Input value={draft.photo_url} onChange={(e) => set("photo_url", e.target.value)} placeholder="https://…" /></Field>
               <Field className="sm:col-span-6" label="Description"><Input value={draft.description} onChange={(e) => set("description", e.target.value)} /></Field>
               {error ? <p className="sm:col-span-6 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
               <div className="sm:col-span-6 flex flex-wrap gap-2">
@@ -99,7 +100,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Category</TableHead><TableHead>Unit</TableHead><TableHead className="text-right">Price</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
+                <TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Category</TableHead><TableHead>Unit</TableHead><TableHead>In warehouse</TableHead><TableHead className="text-right">Price</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
               </TableHeader>
               <TableBody>
                 {visible.map((p) =>
@@ -119,6 +120,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
                       <TableCell className="tnum text-xs text-muted-foreground">{p.sku}</TableCell>
                       <TableCell><StatusPill tone="neutral">{p.category}</StatusPill></TableCell>
                       <TableCell className="text-sm text-muted-foreground">{unitShort(p.unit_of_measure)}</TableCell>
+                      <TableCell><StockCell product={p} onHand={stock[p.id] ?? 0} onDone={() => router.refresh()} /></TableCell>
                       <TableCell className="tnum text-right">{formatPHP(p.unit_price)}</TableCell>
                       <TableCell className="text-right">
                         {confirmId === p.id ? (
@@ -137,7 +139,7 @@ export function ProductCatalog({ products }: { products: Product[] }) {
                     </TableRow>
                   ),
                 )}
-                {visible.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground">No products yet.</TableCell></TableRow> : null}
+                {visible.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground">No products yet.</TableCell></TableRow> : null}
               </TableBody>
             </Table>
           </div>
@@ -149,6 +151,43 @@ export function ProductCatalog({ products }: { products: Product[] }) {
 
 function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return <div className={`space-y-1.5 ${className ?? ""}`}><Label>{label}</Label>{children}</div>;
+}
+
+function StockCell({ product, onHand, onDone }: { product: Product; onHand: number; onDone: () => void }) {
+  const [adding, setAdding] = React.useState(false);
+  const [qty, setQty] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
+
+  async function submit() {
+    const n = Number(qty);
+    if (!Number.isFinite(n) || n <= 0) { setErr("Enter a quantity"); return; }
+    setBusy(true); setErr(null);
+    const res = await receiveStock({ sku_id: product.id, qty: n });
+    setBusy(false);
+    if (!res.ok) { setErr(res.error); return; }
+    setQty(""); setAdding(false); onDone();
+  }
+
+  if (adding) {
+    return (
+      <div className="flex items-center gap-1">
+        <Input type="number" inputMode="numeric" min={1} autoFocus value={qty} onChange={(e) => setQty(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") setAdding(false); }}
+          placeholder="Qty" className="h-8 w-20 tnum" />
+        <Button size="icon" variant="ghost" aria-label="Confirm add stock" disabled={busy} onClick={submit}><Check className="h-4 w-4 text-primary" /></Button>
+        <Button size="icon" variant="ghost" aria-label="Cancel" onClick={() => { setAdding(false); setErr(null); }}><X className="h-4 w-4" /></Button>
+        {err ? <span className="text-xs text-destructive">{err}</span> : null}
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`tnum text-sm font-medium ${onHand <= 0 ? "text-muted-foreground" : ""}`}>{onHand.toLocaleString("en-PH")}</span>
+      <span className="text-xs text-muted-foreground">{unitShort(product.unit_of_measure)}</span>
+      <Button size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs" onClick={() => setAdding(true)}><PackagePlus className="h-3.5 w-3.5" /> Add</Button>
+    </div>
+  );
 }
 
 function EditRow({ product, onDone, onCancel }: { product: Product; onDone: () => void; onCancel: () => void }) {
@@ -172,6 +211,7 @@ function EditRow({ product, onDone, onCancel }: { product: Product; onDone: () =
       <TableCell className="tnum text-xs text-muted-foreground">{product.sku}</TableCell>
       <TableCell><div className="w-32"><Select value={category} onValueChange={setCategory}><SelectTrigger className="h-8"><SelectValue /></SelectTrigger><SelectContent>{(CATEGORIES.includes(category) ? CATEGORIES : [category, ...CATEGORIES]).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div></TableCell>
       <TableCell className="text-sm text-muted-foreground">{unitShort(product.unit_of_measure)}</TableCell>
+      <TableCell className="text-xs text-muted-foreground">—</TableCell>
       <TableCell className="text-right"><Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="h-8 w-24 text-right tnum" />{err ? <div className="text-xs text-destructive">{err}</div> : null}</TableCell>
       <TableCell className="text-right"><div className="inline-flex gap-1"><Button variant="ghost" size="icon" aria-label="Save" disabled={busy} onClick={save}><Check className="h-4 w-4" /></Button><Button variant="ghost" size="icon" aria-label="Cancel" onClick={onCancel}><X className="h-4 w-4" /></Button></div></TableCell>
     </TableRow>
