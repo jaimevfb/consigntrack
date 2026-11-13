@@ -125,9 +125,8 @@ export function InventoryTable({ rows }: { rows: InvRow[] }) {
                       <div className="tnum truncate text-xs text-muted-foreground">{r.sku} · {r.consignor_name}</div>
                       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:hidden">
                         <span className="tnum font-medium text-foreground">{r.on_hand} on hand</span>
+                        <span className="tnum text-muted-foreground">· {formatPHP(r.on_hand * r.unit_price)}</span>
                         {disputed}
-                        <span className="text-muted-foreground">·</span>
-                        <span className="tnum text-muted-foreground">{formatPHP(r.on_hand * r.unit_price)}</span>
                       </div>
                     </div>
                   </div>
