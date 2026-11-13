@@ -42,6 +42,10 @@ function DisputeRow({ packageId, line }: { packageId: string; line: DisputeLine 
   const [confirmOff, setConfirmOff] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
 
+  // held = missing (short) + damaged (scanned). The scanned codes are the damaged ones.
+  const damaged = line.items ? line.items.split(",").filter((s) => s.trim()).length : 0;
+  const short = Math.max(0, line.qty_disputed - damaged);
+
   async function act(received: boolean) {
     setBusy(received ? "release" : "writeoff");
     setErr(null);
@@ -56,10 +60,12 @@ function DisputeRow({ packageId, line }: { packageId: string; line: DisputeLine 
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium">{line.name}</div>
         <div className="tnum flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-          {line.sku} · <span className="font-semibold text-warn-foreground">{line.qty_disputed} disputed</span>
+          {line.sku} · <span className="font-semibold text-warn-foreground">{line.qty_disputed} held</span>
+          {short > 0 ? <span className="rounded-full bg-warn/15 px-1.5 py-0.5 font-semibold text-warn-foreground">{short} short</span> : null}
+          {damaged > 0 ? <span className="rounded-full bg-warn/15 px-1.5 py-0.5 font-semibold text-warn-foreground">{damaged} damaged</span> : null}
           {line.photo ? <span className="inline-flex items-center gap-1"><Camera className="h-3 w-3" /> note on file</span> : null}
         </div>
-        {line.items ? <div className="tnum mt-0.5 text-xs text-muted-foreground">Scanned: <span className="text-foreground">{line.items}</span></div> : null}
+        {line.items ? <div className="tnum mt-0.5 text-xs text-muted-foreground">Damaged items: <span className="text-foreground">{line.items}</span></div> : null}
         {err ? <div className="mt-1 text-xs text-destructive">{err}</div> : null}
       </div>
       <div className="flex shrink-0 items-center gap-2">
