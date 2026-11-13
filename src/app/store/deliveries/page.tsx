@@ -4,6 +4,7 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getStorePackages } from "@/lib/ledger-data";
 import { ReceivingPanel, type AwaitingPackage, type HistoryRow } from "@/components/receiving-panel";
+import { DisputeResolver, type DisputedPackage } from "@/components/dispute-resolver";
 import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Deliveries & Receiving" };
@@ -13,14 +14,29 @@ export default async function StoreDeliveriesPage() {
   if (!profile.store_id) return <p className="text-sm text-muted-foreground">No store scope.</p>;
   const supabase = createClient();
 
-  const [{ data: awaitingRaw }, history] = await Promise.all([
+  const [{ data: awaitingRaw }, { data: disputedRaw }, history] = await Promise.all([
     supabase
       .from("packages")
       .select("id, pkg_code, consignors(name), package_lines(id, qty_expected, products(sku, name))")
       .eq("consignee_id", profile.store_id).eq("status", "IN_TRANSIT").eq("direction", "OUTBOUND")
       .order("in_transit_at", { ascending: true }),
+    supabase
+      .from("packages")
+      .select("id, pkg_code, consignors(name), package_lines(sku_id, qty_disputed, dispute_photo_url, products(sku, name))")
+      .eq("consignee_id", profile.store_id).eq("status", "PARTIAL_DISPUTED")
+      .order("updated_at", { ascending: false }),
     getStorePackages(profile.store_id),
   ]);
+
+  const disputed: DisputedPackage[] = ((disputedRaw ?? []) as unknown as Array<{
+    id: string; pkg_code: string; consignors: { name: string } | null;
+    package_lines: Array<{ sku_id: string; qty_disputed: number; dispute_photo_url: string | null; products: { sku: string; name: string } | null }>;
+  }>).map((p) => ({
+    id: p.id, pkg_code: p.pkg_code, consignor_name: p.consignors?.name ?? "—",
+    lines: p.package_lines.filter((l) => l.qty_disputed > 0).map((l) => ({
+      sku_id: l.sku_id, sku: l.products?.sku ?? "—", name: l.products?.name ?? "—", qty_disputed: l.qty_disputed, photo: l.dispute_photo_url,
+    })),
+  })).filter((p) => p.lines.length > 0);
 
   const awaiting: AwaitingPackage[] = ((awaitingRaw ?? []) as unknown as Array<{
     id: string; pkg_code: string; consignors: { name: string } | null;
@@ -43,6 +59,7 @@ export default async function StoreDeliveriesPage() {
         </div>
         <Button asChild><Link href="/scan"><ScanLine className="h-4 w-4" /> Scan a package</Link></Button>
       </div>
+      <DisputeResolver packages={disputed} />
       <ReceivingPanel awaiting={awaiting} history={historyRows} />
     </div>
   );
