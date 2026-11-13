@@ -92,67 +92,82 @@ export function InventoryTable({ rows }: { rows: InvRow[] }) {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs text-muted-foreground">
-            <tr>
-              <th className="w-6" />
-              <th className="p-3 text-left font-medium">Product</th>
-              <th className="p-3 text-right font-medium">On hand</th>
-              <th className="p-3 text-right font-medium">Value</th>
-              <th className="p-3 text-left font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.map((r) => {
-              const st = stockStatus(r);
-              const isOpen = open[r.sku_id];
-              return (
-                <React.Fragment key={r.sku_id}>
-                  <tr className="cursor-pointer border-t border-border hover:bg-muted/40" onClick={() => setOpen((o) => ({ ...o, [r.sku_id]: !o[r.sku_id] }))}>
-                    <td className="pl-3 text-muted-foreground">{isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        {r.photo_url ? <img src={r.photo_url} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover" /> : null}
-                        <div className="min-w-0">
-                          <div className="truncate font-medium">{r.name}</div>
-                          <div className="tnum truncate text-xs text-muted-foreground">{r.sku} · {r.consignor_name}</div>
-                        </div>
+        {/* Column header — desktop only; the mobile layout stacks its own labels */}
+        <div className="hidden items-center gap-3 bg-muted/50 px-3 py-2.5 text-xs font-medium text-muted-foreground sm:flex">
+          <span className="h-4 w-4 shrink-0" />
+          <span className="flex-1">Product</span>
+          <span className="w-32 shrink-0 text-right">On hand</span>
+          <span className="w-24 shrink-0 text-right">Value</span>
+          <span className="w-24 shrink-0">Status</span>
+        </div>
+
+        <div className="divide-y divide-border">
+          {list.map((r) => {
+            const st = stockStatus(r);
+            const isOpen = open[r.sku_id];
+            const disputed = r.in_dispute > 0 ? (
+              <span className="tnum rounded-full bg-warn/20 px-1.5 py-0.5 text-[10px] font-semibold text-warn-foreground">+{r.in_dispute} disputed</span>
+            ) : null;
+            return (
+              <div key={r.sku_id}>
+                <button
+                  type="button"
+                  onClick={() => setOpen((o) => ({ ...o, [r.sku_id]: !o[r.sku_id] }))}
+                  className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/40"
+                >
+                  <span className="shrink-0 text-muted-foreground">{isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</span>
+
+                  {/* Product + (mobile) inline meta */}
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    {r.photo_url ? <img src={r.photo_url} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover" /> : null}
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{r.name}</div>
+                      <div className="tnum truncate text-xs text-muted-foreground">{r.sku} · {r.consignor_name}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:hidden">
+                        <span className="tnum font-medium text-foreground">{r.on_hand} on hand</span>
+                        {disputed}
+                        <span className="text-muted-foreground">·</span>
+                        <span className="tnum text-muted-foreground">{formatPHP(r.on_hand * r.unit_price)}</span>
                       </div>
-                    </td>
-                    <td className="p-3 text-right"><span className="tnum font-medium">{r.on_hand}</span>{r.in_dispute > 0 ? <span className="tnum ml-1.5 rounded-full bg-warn/20 px-1.5 py-0.5 text-[10px] font-semibold text-warn-foreground">+{r.in_dispute} disputed</span> : null}</td>
-                    <td className="tnum p-3 text-right">{formatPHP(r.on_hand * r.unit_price)}</td>
-                    <td className="p-3"><StatusPill tone={st.tone}>{st.label}</StatusPill></td>
-                  </tr>
-                  {isOpen ? (
-                    <tr className="border-t border-border bg-muted/20">
-                      <td />
-                      <td colSpan={4} className="p-3">
-                        <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
-                          <dl className="grid grid-cols-2 content-start gap-x-4 gap-y-2 text-sm">
-                            <dt className="text-muted-foreground">Category</dt><dd className="text-right">{r.category}</dd>
-                            <dt className="text-muted-foreground">Unit</dt><dd className="text-right">{unitLabel(r.unit_of_measure)}</dd>
-                            <dt className="text-muted-foreground">Agreed price</dt><dd className="tnum text-right">{formatPHP(r.unit_price)}</dd>
-                            <dt className="text-muted-foreground">Store commission</dt><dd className="tnum text-right">{r.commission_pct}%</dd>
-                            <dt className="text-muted-foreground">Sold last 30 days</dt><dd className="tnum text-right">{formatNumber(r.sold)}</dd>
-                          </dl>
-                          <div className="flex flex-col justify-center rounded-lg border border-border bg-background/50 p-4">
-                            <div className="mb-2 text-xs font-medium text-muted-foreground">Where the goods are</div>
-                            <CustodyBar segments={[
-                              { key: "onhand", label: "On hand", value: r.on_hand },
-                              { key: "disputed", label: "Disputed", value: r.in_dispute },
-                              { key: "sold", label: "Sold (30d)", value: r.sold },
-                            ]} />
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : null}
-                </React.Fragment>
-              );
-            })}
-            {list.length === 0 ? <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">{query || filter !== "all" ? "Nothing matches." : "No stock yet."}</td></tr> : null}
-          </tbody>
-        </table>
+                    </div>
+                  </div>
+
+                  {/* Desktop columns */}
+                  <div className="hidden w-32 shrink-0 items-center justify-end gap-1.5 text-right sm:flex">
+                    <span className="tnum font-medium">{r.on_hand}</span>{disputed}
+                  </div>
+                  <div className="tnum hidden w-24 shrink-0 text-right sm:block">{formatPHP(r.on_hand * r.unit_price)}</div>
+
+                  {/* Status — both layouts (right-aligned on mobile) */}
+                  <div className="shrink-0 sm:w-24"><StatusPill tone={st.tone}>{st.label}</StatusPill></div>
+                </button>
+
+                {isOpen ? (
+                  <div className="border-t border-border bg-muted/20 p-3">
+                    <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
+                      <dl className="grid grid-cols-2 content-start gap-x-4 gap-y-2 text-sm">
+                        <dt className="text-muted-foreground">Category</dt><dd className="text-right">{r.category}</dd>
+                        <dt className="text-muted-foreground">Unit</dt><dd className="text-right">{unitLabel(r.unit_of_measure)}</dd>
+                        <dt className="text-muted-foreground">Agreed price</dt><dd className="tnum text-right">{formatPHP(r.unit_price)}</dd>
+                        <dt className="text-muted-foreground">Store commission</dt><dd className="tnum text-right">{r.commission_pct}%</dd>
+                        <dt className="text-muted-foreground">Sold last 30 days</dt><dd className="tnum text-right">{formatNumber(r.sold)}</dd>
+                      </dl>
+                      <div className="flex flex-col justify-center rounded-lg border border-border bg-background/50 p-4">
+                        <div className="mb-2 text-xs font-medium text-muted-foreground">Where the goods are</div>
+                        <CustodyBar segments={[
+                          { key: "onhand", label: "On hand", value: r.on_hand },
+                          { key: "disputed", label: "Disputed", value: r.in_dispute },
+                          { key: "sold", label: "Sold (30d)", value: r.sold },
+                        ]} />
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+          {list.length === 0 ? <div className="p-6 text-center text-muted-foreground">{query || filter !== "all" ? "Nothing matches." : "No stock yet."}</div> : null}
+        </div>
         {filter === "all" && oos.length > 0 ? (
           <button onClick={() => setShowOOS((v) => !v)} className="w-full border-t border-border bg-muted/30 p-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/60">
             {showOOS ? "Hide" : "Show"} {oos.length} out-of-stock item{oos.length === 1 ? "" : "s"}
