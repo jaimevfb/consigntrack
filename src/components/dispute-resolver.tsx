@@ -7,7 +7,7 @@ import { resolveDispute } from "@/app/_actions/ledger-ops";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export interface DisputeLine { sku_id: string; sku: string; name: string; qty_disputed: number; photo: string | null }
+export interface DisputeLine { sku_id: string; sku: string; name: string; qty_disputed: number; photo: string | null; items?: string | null }
 export interface DisputedPackage { id: string; pkg_code: string; consignor_name: string; lines: DisputeLine[] }
 
 export function DisputeResolver({ packages }: { packages: DisputedPackage[] }) {
@@ -55,10 +55,11 @@ function DisputeRow({ packageId, line }: { packageId: string; line: DisputeLine 
     <div className="flex flex-wrap items-center gap-3 py-2.5">
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium">{line.name}</div>
-        <div className="tnum flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="tnum flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
           {line.sku} · <span className="font-semibold text-warn-foreground">{line.qty_disputed} disputed</span>
-          {line.photo ? <span className="inline-flex items-center gap-1"><Camera className="h-3 w-3" /> photo on file</span> : null}
+          {line.photo ? <span className="inline-flex items-center gap-1"><Camera className="h-3 w-3" /> note on file</span> : null}
         </div>
+        {line.items ? <div className="tnum mt-0.5 text-xs text-muted-foreground">Scanned: <span className="text-foreground">{line.items}</span></div> : null}
         {err ? <div className="mt-1 text-xs text-destructive">{err}</div> : null}
       </div>
       <div className="flex shrink-0 items-center gap-2">

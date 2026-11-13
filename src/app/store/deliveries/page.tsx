@@ -24,7 +24,7 @@ export default async function StoreDeliveriesPage() {
     // the originating package's current status — so legacy/partial disputes surface.
     supabase.from("v_in_dispute").select("sku_id, qty").eq("consignee_id", profile.store_id),
     // Trace each dispute back to the package that raised it (latest hold wins).
-    supabase.from("ledger_entries").select("sku_id, ref_id, created_at")
+    supabase.from("ledger_entries").select("sku_id, ref_id, reason, created_at")
       .eq("consignee_id", profile.store_id).eq("entry_type", "DISPUTE_HOLD").eq("ref_type", "package")
       .order("created_at", { ascending: false }),
     getStorePackages(profile.store_id),
@@ -32,8 +32,13 @@ export default async function StoreDeliveriesPage() {
 
   const open = ((openRaw ?? []) as { sku_id: string; qty: number }[]).filter((d) => d.qty > 0);
   const latestPkg = new Map<string, string>();
-  for (const h of ((holdRaw ?? []) as { sku_id: string; ref_id: string | null }[])) {
-    if (h.ref_id && !latestPkg.has(h.sku_id)) latestPkg.set(h.sku_id, h.ref_id);
+  const itemsForSku = new Map<string, string | null>();
+  for (const h of ((holdRaw ?? []) as { sku_id: string; ref_id: string | null; reason: string | null }[])) {
+    if (!latestPkg.has(h.sku_id)) {
+      if (h.ref_id) latestPkg.set(h.sku_id, h.ref_id);
+      const m = h.reason?.match(/scanned:\s*(.+)$/i);
+      itemsForSku.set(h.sku_id, m ? m[1] : null);
+    }
   }
 
   let disputed: DisputedPackage[] = [];
@@ -57,7 +62,7 @@ export default async function StoreDeliveriesPage() {
       if (!byPkg.has(pkgId)) byPkg.set(pkgId, { id: pkgId, pkg_code: pk?.pkg_code ?? "Package", consignor_name: pk?.consignors?.name ?? "—", lines: [] });
       const prod = prodById.get(d.sku_id);
       const photo = pk?.package_lines.find((l) => l.sku_id === d.sku_id)?.dispute_photo_url ?? null;
-      byPkg.get(pkgId)!.lines.push({ sku_id: d.sku_id, sku: prod?.sku ?? "—", name: prod?.name ?? "—", qty_disputed: d.qty, photo });
+      byPkg.get(pkgId)!.lines.push({ sku_id: d.sku_id, sku: prod?.sku ?? "—", name: prod?.name ?? "—", qty_disputed: d.qty, photo, items: itemsForSku.get(d.sku_id) ?? null });
     }
     disputed = [...byPkg.values()];
   }

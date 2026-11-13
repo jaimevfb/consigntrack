@@ -7,7 +7,7 @@ import * as React from "react";
  * onDecode(code) for each read, with a short re-arm gap so the same label
  * isn't fired twice. Safe teardown (html5-qrcode's stop() throws when idle).
  */
-export function BarcodeScanner({ onDecode }: { onDecode: (code: string) => void }) {
+export function BarcodeScanner({ onDecode, scannerId = "sku-scanner" }: { onDecode: (code: string) => void; scannerId?: string }) {
   // keep the latest callback without re-initialising the camera
   const cbRef = React.useRef(onDecode);
   cbRef.current = onDecode;
@@ -22,7 +22,7 @@ export function BarcodeScanner({ onDecode }: { onDecode: (code: string) => void 
       try {
         const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
         if (cancelled) return;
-        const h = new Html5Qrcode("sku-scanner", {
+        const h = new Html5Qrcode(scannerId, {
           verbose: false,
           formatsToSupport: [
             Html5QrcodeSupportedFormats.CODE_128,
@@ -72,7 +72,7 @@ export function BarcodeScanner({ onDecode }: { onDecode: (code: string) => void 
 
   return (
     <div className="space-y-2">
-      <div id="sku-scanner" className="mx-auto w-full overflow-hidden rounded-2xl border border-border bg-black [&_img]:hidden [&_video]:w-full [&_video]:rounded-2xl" />
+      <div id={scannerId} className="mx-auto w-full overflow-hidden rounded-2xl border border-border bg-black [&_img]:hidden [&_video]:w-full [&_video]:rounded-2xl" />
       {err ? <p className="text-center text-xs text-destructive">{err}</p> : <p className="text-center text-xs text-muted-foreground">Center the barcode in the frame — it scans automatically.</p>}
     </div>
   );

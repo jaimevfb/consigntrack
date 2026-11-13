@@ -13,6 +13,7 @@ export interface ReceiveLine {
   qty_received: number;
   qty_disputed?: number;
   photo?: string | null;
+  codes?: string[]; // scanned barcodes of the exact disputed items
 }
 
 export async function receivePackage(packageId: string, lines: ReceiveLine[]): Promise<ActionResult & { status?: string }> {
